@@ -1,0 +1,116 @@
+{% extends "djstripe/base.html" %}
+
+{% block title %}Accounts Dashboard{% endblock title %}
+
+{% block content %}
+    {{ block.super }}
+
+    </button>
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                {% include "djstripe/includes/_subscription_status.html" %}
+                <h2>Account Information</h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-2">
+                <p>
+                    <a class="btn btn-primary pull-right" href="{% url 'djstripe:change_card' %}">Add Card</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-xs-12">
+                <table class="table table-hover" id="card-list">
+                    <thead>
+                    <tr>
+                        <th><b>Card Type</b></th>
+                        <th><b>Last 4 of card</b></th>
+                        <th><b>Exp date</b></th>
+                        <th><b>Delete</b></th>
+                        <th><b>Default</b></th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for card in cards %}
+                        {% if card.id == customer.get_default_card %}
+                            <tr class="success">
+                                <td>{{ card.type }}</td>
+                                <td>{{ card.last4 }}</td>
+                                <td>{{ card.exp_month }}/{{ card.exp_year }}</td>
+                                <td><button id="delete" data-cid="{{ card.id }}">Delete</button></td>
+                                <td></td>
+                            </tr>
+                        {% elif card.id != customer.get_default_card %}
+                            <tr>
+                                <td>{{ card.type }}</td>
+                                <td>{{ card.last4 }}</td>
+                                <td>{{ card.exp_month }}/{{ card.exp_year }}</td>
+                                <td><button id="delete" data-cid="{{ card.id }}">Delete</button></td>
+                                <td><button id="default" data-cid="{{ card.id }}">Default</button></td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% if plans %}
+        <script>
+            $(function() {
+                $.post("{% url 'djstripe:sync_history' %}", function(data) {
+                    $('#history-table').html(data);
+                });
+            });
+        </script>
+    {% else %}
+        <script>
+            $(function() {
+                $.post("{% url 'djstripe:sync_history' %}", function(data) {
+                    $('#history-table').html(data);
+                    $('.in-progress-gif').hide();
+                });
+            });
+        </script>
+    {% endif %}
+
+    <script type="text/javascript">
+        $(document).on('click', '#delete', function(data) {
+            var cid = $(this).data("cid");
+            $("#delete").button("loading");
+            $('#default').prop('disabled', true);
+            $.ajax({
+                type: 'POST',
+                url: '{% url 'djstripe:card' %}',
+                data: {'status': 'delete', 'id': cid},
+                success: function(data) {
+                    location.reload();
+                }
+            });
+
+        });
+
+        $(document).on('click', '#default', function(data) {
+            var cid = $(this).data("cid");
+            $("#default").button("loading");
+            $('#delete').prop('disabled', true);
+            $.ajax({
+                type: 'POST',
+                url: '{% url 'djstripe:card' %}',
+                data: {'status': 'default', 'id': cid},
+                success: function(data) {
+                    location.reload();
+                }
+            });
+        })
+    </script>
+
+{% endblock javascript %}

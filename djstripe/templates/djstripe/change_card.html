@@ -1,0 +1,288 @@
+{% extends "djstripe/base.html" %}
+{% load static %}
+
+{% block title %}Billing{% endblock title %}
+
+{% block content %}
+    <div class="container">
+        <br />
+        <div class="row">
+            {% if stripe_error %}
+                {{ stripe_error }}
+            {% endif %}
+            {% if message %}
+                <div class="alert alert-danger" role="alert">
+                    You must enter your credit card information in order to subscribe to a plan
+                </div>
+            {% endif %}
+            <div class="col-md-8 col-md-offset-2">
+                <div class="well well-sm">
+                    <form action="{% url 'djstripe:change_card' %}" class="form-horizontal" id="change-card-form" method="POST">{% csrf_token %}
+                        <fieldset>
+                            <legend>Add credit card</legend>
+
+                            <label class="col-md-3 control-label" for="message">Billing Address</label>
+                            <div class="col-md-9">
+
+                                <div class="form-group">
+                                    <div class="col-md-10">
+                                        <input name="address-line1" type="text" placeholder="Street address" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-md-4">
+                                        <input name="address-city" id="city" type="text" placeholder="City" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input name="address-state" type="text" placeholder="State" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input name="address-zip" id="zip" type="text" placeholder="Postal code" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-md-10">
+                                        <input class="form-control" type="text" placeholder="Country" size="20" autocomplete="off" name="address-country" id="country" data-stripe="address-country" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 1px solid white;">
+
+                            <label class="col-md-3 control-label" for="message">Credit Card</label>
+                            <div class="col-md-9">
+                                <div class="form-group">
+                                    <div class="col-md-10">
+                                        <div class="required-field-block">
+                                            <input name="card-name" type="text" placeholder="Card onwer name" class="form-control">
+                                            <div class="required-icon">
+                                                <div class="text">*</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" id="number">
+                                    <div class="col-md-10">
+                                        <div class="required-field-block">
+                                            <input class="form-control" placeholder="Card number" type="text" pattern="\d*" autocomplete="off" data-stripe="number"/>
+                                            <div class="required-icon">
+                                                <div class="text">*</div>
+                                            </div>
+                                            <p class="help-block hide" id="number-error-msg"></p>
+                                        </div>
+                                    </div>
+                                    {% if customer.card_kind %}
+                                    <i class="fa fa-cc-{{ customer.card_kind|lower }} fa-2x"></i>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-md-3" id="exp-month">
+                                        <div class="required-field-block">
+                                            <select class="form-control" data-stripe="exp-month">
+                                            <option value="01">Jan (01)</option>
+                                            <option value="02">Feb (02)</option>
+                                            <option value="03">Mar (03)</option>
+                                            <option value="04">Apr (04)</option>
+                                            <option value="05">May (05)</option>
+                                            <option value="06">June (06)</option>
+                                            <option value="07">July (07)</option>
+                                            <option value="08">Aug (08)</option>
+                                            <option value="09">Sep (09)</option>
+                                            <option value="10">Oct (10)</option>
+                                            <option value="11">Nov (11)</option>
+                                            <option value="12">Dec (12)</option>
+                                        </select>
+                                            <div class="required-icon">
+                                                <div class="text">*</div>
+                                            </div>
+                                        </div>
+                                        <p class="help-block hide" id="exp-month-error-msg"></p>
+                                    </div>
+                                    <div class="col-md-3" id="exp-year">
+                                        <div class="required-field-block">
+                                            <select class="form-control" data-stripe="exp-year">
+                                                <option value="13">2013</option>
+                                                <option value="14">2014</option>
+                                                <option value="15">2015</option>
+                                                <option value="16">2016</option>
+                                                <option value="17">2017</option>
+                                                <option value="18">2018</option>
+                                                <option value="19">2019</option>
+                                                <option value="20">2020</option>
+                                                <option value="21">2021</option>
+                                                <option value="22">2022</option>
+                                                <option value="23">2023</option>
+                                            </select>
+                                            <div class="required-icon">
+                                                <div class="text">*</div>
+                                            </div>
+                                            <p class="help-block hide" id="exp-year-error-msg"></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4" id="cvc">
+                                        <div class="required-field-block">
+                                            <input class="form-control" placeholder="Security Code" type="text" size="4" pattern="\d*" data-stripe="cvc"/>
+                                            <div class="required-icon">
+                                                <div class="text">*</div>
+                                            </div>
+                                            <p class="help-block hide" id="cvc-error-msg"></p>
+                                        </div>
+                                    </div>
+                                    <a class="btn" data-toggle="popover" title=""
+                                       data-content="CVC"
+                                       data-original-title="Card information">
+                                        <i class="fa fa-question-circle fa-2x"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <hr style="border: 1px solid white;">
+
+                            <!-- Form actions -->
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-md-6 text-right">
+                                        <button type="submit" class="btn btn-success">
+                                            {% if card.id == customer.get_default_card %}
+                                                Add first card
+                                            {% else %}
+                                                Add new card
+                                            {% endif %}
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 text-right">
+                                        <a href="{% url 'djstripe:subscribe' %}" class="btn btn-default">Cancel</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+    <script type="text/javascript">
+        // This identifies your website in the createToken call below
+        Stripe.setPublishableKey('{{ STRIPE_PUBLIC_KEY }}');
+        jQuery(function($) {
+            $('.btn').popover();
+            $('#change-card-form').submit(function(event) {
+                var $form = $(this);
+
+                // Disable the submit button to prevent repeated clicks
+                $form.find('button').prop('disabled', true);
+
+                Stripe.createToken($form, stripeResponseHandler);
+
+                // Prevent the form from submitting with the default action
+                return false;
+            });
+
+            var stripeResponseHandler = function(status, response) {
+                var $form = $('#change-card-form');
+
+                if (response.error) {
+                    // Show the errors on the form
+                    $form.find('.payment-errors').text(response.error.message);
+                    if (response.error.param == "number") {
+                        $("#number").addClass("has-error");
+                        $("#number-error-msg").removeClass("hide");
+                        $("#number-error-msg").text(response.error.message);
+                    } else {
+                        $("#number").removeClass("has-error");
+                        $("#number-error-msg").addClass("hide");
+                    }
+                    if (response.error.param == "exp_year") {
+                        $("#exp-year").addClass("has-error");
+                        $("#exp-year-error-msg").removeClass("hide");
+                        $("#exp-year-error-msg").text(response.error.message);
+                    } else {
+                        $("#exp-year").removeClass("has-error");
+                        $("#exp-year-error-msg").addClass("hide");
+                    }
+
+                    if (response.error.param == "exp_month") {
+                        $("#exp-month").addClass("has-error");
+                        $("#exp-month-error-msg").removeClass("hide");
+                        $("#exp-month-error-msg").text(response.error.message);
+                    } else {
+                        $("#exp-month").removeClass("has-error");
+                        $("#exp-month-error-msg").addClass("hide");
+                    }
+                    if (response.error.param == "cvc") {
+                        debugger;
+                        $("#cvc").addClass("has-error");
+                        $("#cvc-error-msg").removeClass("hide");
+                        $("#cvc-error-msg").text(response.error.message);
+                    } else {
+                        $("#cvc").removeClass("has-error");
+                        $("#cvc-error-msg").addClass("hide");
+                    }
+                    $form.find('button').prop('disabled', false);
+                } else {
+                    // token contains id, last4, and card type
+                    var token = response.id;
+                    // Insert the token into the form so it gets submitted to the server
+                    $form.append($('<input type="hidden" name="stripe_token" />').val(token));
+                    // and submit
+                    $form.get(0).submit();
+                }
+            };
+        });
+    </script>
+<script src="https://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places&language=en"></script>
+
+<script type="text/javascript">
+    $(function() {
+        var city = '';
+        var post_code = '';
+        var country = '';
+
+        var options = {
+            types: ['geocode'],
+        };
+
+        var autocomplete = new google.maps.places.Autocomplete($("#zip")[0], options);
+
+        var listenerHandle = google.maps.event.addListener(autocomplete, 'place_changed', function() {
+
+            var place = autocomplete.getPlace();
+            console.log(place)
+
+            if (place) {
+                address_components = place.address_components;
+                if (address_components) {
+                    for (index in address_components) {
+                        component = address_components[index];
+                        if (component.types.indexOf('locality') > -1) {
+                            city = component.long_name;
+                        }
+                        if (component.types.indexOf('country') > -1){
+                            country = component.long_name;
+                        }
+                        if (component.types.indexOf('postal_code') > -1){
+                            post_code = component.long_name;
+                        }
+                    }
+                }
+            }
+            $('#zip').val(post_code);
+            $('#country').val(country);
+            $('#city').val(city);
+
+        });
+    });
+</script>
+
+{% endblock javascript %}
+

@@ -1,0 +1,31 @@
+{% extends "djstripe/base.html" %}
+{% load bootstrap_toolkit %}
+
+{% block title %}Payment History{% endblock title %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-xs-12">
+            {% include "djstripe/includes/_history_table.html" %}
+        </div>
+    </div>
+{% endblock content %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $(function() {
+            var current = $(location).attr("href").slice($(location).attr("href").indexOf('?'));
+            var loc = '';
+
+            if (current != '/') {
+                loc = current;
+            }
+
+            $.post("{% url 'djstripe:sync_history' %}" + loc, function(data) {
+                $('#history-table').html(data);
+                $('.in-progress-gif').hide();
+            });
+        });
+    </script>
+{% endblock javascript %}

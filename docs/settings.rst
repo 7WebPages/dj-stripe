@@ -1,0 +1,138 @@
+=========
+Settings
+=========
+
+djstripe has two settings modules:
+
+* ``djstripe.settings``
+* ``djstripe.safe_settings``
+
+The reason for this is to accomodate how djstripe handles interaction with Django 1.5+ custom user models.
+Because of how ``django.contrib.auth.get_user_model()`` works, it's possible to call that out of order and throw an ``django.core.exceptions.ImproperlyConfigured`` error, even when you are properly configured. Therefore, some settings values are available in an intermediary ``djstripe.safe_settings`` module. 
+
+``djstripe.safe_settings`` are listed at the end of this document page.
+
+
+DJSTRIPE_DEFAULT_PLAN (=None)
+====================================
+
+Payment plans default. 
+
+Possibly deprecated in favor of model based plans.
+
+DJSTRIPE_INVOICE_FROM_EMAIL (="billing@example.com")
+======================================================
+
+Invoice emails come from this address.
+
+DJSTRIPE_PLANS (={})
+===========================
+
+Payment plans. 
+
+Possibly deprecated in favor of model based plans.
+
+Example:
+
+.. code-block:: python
+
+    DJSTRIPE_PLANS = {
+        "monthly": {
+            "stripe_plan_id": "pro-monthly",
+            "name": "Web App Pro ($24.99/month)",
+            "description": "The monthly subscription plan to WebApp",
+            "price": 2499,  # $24.99
+            "currency": "usd",
+            "interval": "month",
+            "image": "img/pro-monthly.png"
+        },
+        "yearly": {
+            "stripe_plan_id": "pro-yearly",
+            "name": "Web App Pro ($199/year)",
+            "description": "The annual subscription plan to WebApp",
+            "price": 19900,  # $199.00
+            "currency": "usd",
+            "interval": "year",
+            "image": "img/pro-yearly.png"
+        }
+    }
+
+DJSTRIPE_PRORATION_POLICY (=False)
+====================================
+
+By default, plans are not prorated in dj-stripe. Concretely, this is how this translates: 
+
+1) If a customer cancels their plan during a trial, the cancellation is effective right away.
+2) If a customer cancels their plan outside of a trial, their subscription remains active until the subscription's period end, and they do not receive a refund.
+3) If a customer switches from one plan to another, the new plan becomes effective right away, and the customer is billed for the new plan's amount.
+
+Assigning ``True`` to ``DJSTRIPE_PRORATION_POLICY`` reverses the functioning of item 2 (plan cancellation) by making a cancellation effective right away and refunding the unused balance to the customer, and affects the functioning of item 3 (plan change) by prorating the previous customer's plan towards their new plan's amount.
+
+DJSTRIPE_PRORATION_POLICY_FOR_UPGRADES (=False)
+======================================================
+
+By default, the plan change policy described in item 3 above holds also for plan upgrades.
+
+Assigning ``True`` to ``DJSTRIPE_PRORATION_POLICY_FOR_UPGRADES`` allows dj-stripe to prorate plans in the specific case of an upgrade. Therefore, if a customer upgrades their plan, their new plan is effective right away, and they get billed for the new plan's amount minus the unused balance from their previous plan.
+
+DJSTRIPE_SEND_INVOICE_RECEIPT_EMAILS (=True)
+=============================================
+
+By default dj-stripe sends emails for each receipt. You can turn this off by
+setting this value to ``False``.
+
+
+DJSTRIPE_SUBSCRIPTION_REQUIRED_EXCEPTION_URLS (=())
+======================================================
+
+Used by ``djstripe.middleware.SubscriptionPaymentMiddleware``
+
+Rules:
+
+* "(app_name)" means everything from this app is exempt
+* "[namespace]" means everything with this name is exempt
+* "namespace:name" means this namespaced URL is exempt
+* "name" means this URL is exempt
+* The entire djstripe namespace is exempt
+* If settings.DEBUG is True, then django-debug-toolbar is exempt
+
+Example:
+
+.. code-block:: python
+
+    DJSTRIPE_SUBSCRIPTION_REQUIRED_EXCEPTION_URLS = (
+        "(allauth)",  # anything in the django-allauth URLConf
+        "[blogs]",  # Anything in the blogs namespace
+        "products:detail",  # A ProductDetail view you want shown to non-payers
+        "home",  # Site homepage
+    )
+
+.. note:: Adding app_names to applications.
+
+    To make the ``(allauth)`` work, you may need to define an app_name in the ``include()`` function in the URLConf. For example::
+
+        # in urls.py
+        url(r'^accounts/', include('allauth.urls',  app_name="allauth")),
+
+DJSTRIPE_TRIAL_PERIOD_FOR_USER_CALLBACK (=None)
+======================================================
+
+TODO: Document!
+
+
+DJSTRIPE_WEBHOOK_URL (=r"^webhook/$")
+=============================================
+
+This is where you can set *Stripe.com* to send webhook response. You can set this to what you want to prevent unnecessary hijinks from unfriendly people.
+
+As this is embedded in the URLConf, this must be a resolvable regular expression.
+
+Safe Settings
+==================
+
+These are values generated by djstripe to help you build your projects
+
+djstripe.safe_settings.PLAN_CHOICES
+------------------------------------
+
+Creates a models/forms choices formatted tuple of tuples.
