@@ -167,9 +167,10 @@
               };
           StripeCheckout.open({
             key:         "{{ STRIPE_PUBLIC_KEY }}",
-            name:        'Payment Method',
-            panelLabel:  'Add Payment Method',
-            token:       token
+            name:        'Subscribe',
+            panelLabel:  'Subscribe',
+            token:       token,
+            email: '{{ request.user.email }}'
           });
           return false;
         });
