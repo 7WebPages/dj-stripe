@@ -52,4 +52,4 @@ class HistoryFilter(django_filters.FilterSet):
 
     class Meta:
         model = Invoice
-        fields = ['invoice__period_start']
+        fields = ['invoice__period_start', 'invoice__customer_card_last_4']
