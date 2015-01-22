@@ -35,6 +35,7 @@ from .settings import PY3
 from .settings import User
 from .settings import PAYMENTS_PLANS
 from .settings import STRIPE_PUBLIC_KEY
+from .settings import SUBSCRIBE_SUCCESS_REDIRECT_URL
 from .filters import HistoryFilter
 from .sync import sync_customer
 from stripe.error import InvalidRequestError
@@ -320,6 +321,10 @@ class SubscribeFormView(
     template_name = "djstripe/subscribe_form.html"
     success_url = reverse_lazy("djstripe:history")
     form_valid_message = "You are now subscribed!"
+
+    @property
+    def success_url(self):
+        return reverse_lazy(SUBSCRIBE_SUCCESS_REDIRECT_URL)
 
     def get_context_data(self, *args, **kwargs):
         context = super(SubscribeFormView, self).get_context_data(*args, **kwargs)
