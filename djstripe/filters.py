@@ -45,6 +45,7 @@ class DateRangeFilter(django_filters.RangeFilter):
 class HistoryFilter(django_filters.FilterSet):
 
     invoice__period_start = DateRangeFilter()
+    invoice__customer__card_last_4 = django_filters.Filter()
 
     def __init__(self, *args, **kwargs):
         super(HistoryFilter, self).__init__(*args, **kwargs)
@@ -52,4 +53,4 @@ class HistoryFilter(django_filters.FilterSet):
 
     class Meta:
         model = Invoice
-        fields = ['invoice__period_start', 'invoice__customer_card_last_4']
+        fields = ['invoice__period_start', 'invoice__customer__card_last_4']
