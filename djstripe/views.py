@@ -89,7 +89,6 @@ class OneTime(TemplateView):
             return redirect(reverse('djstripe:one_time_pay'))
 
 
-
 class OneTimePayment(LoginRequiredMixin,
                      PaymentsContextMixin,
                      TemplateView):
@@ -242,7 +241,13 @@ class WebHook(CsrfExemptMixin, View):
 class HistoryTable(tables.Table):
     class Meta:
         model = Charge
-        fields = ("created", "card_kind", "card_last_4", "amount", "paid", "amount_refunded")
+        fields = ("created",
+                  "card_kind",
+                  "card_last_4",
+                  "amount",
+                  "paid",
+                  "amount_refunded"
+                  )
         order_by = '-created'
         attrs = {'id': 'history', 'class': 'paleblue'}
 
@@ -257,10 +262,11 @@ class HistoryView(LoginRequiredMixin,
     select_related = ["charge"]
     filter_set = HistoryFilter
     object = Invoice
+    paginate_by = 10
 
     def get_queryset(self):
         queryset = super(SelectRelatedMixin, self).get_queryset()
-        config = RequestConfig(self.request)
+        config = RequestConfig(self.request, paginate={"per_page": self.paginate_by})
         user = User.objects.get(pk=self.request.user.id)
 
         customer = HistoryTable(queryset.select_related(*self.select_related).filter(customer=user.customer))
