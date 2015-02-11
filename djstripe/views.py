@@ -249,6 +249,7 @@ class HistoryTable(tables.Table):
                   "amount_refunded"
                   )
         order_by = '-created'
+        per_page = 10
         attrs = {'id': 'history', 'class': 'paleblue'}
 
 
@@ -262,11 +263,10 @@ class HistoryView(LoginRequiredMixin,
     select_related = ["charge"]
     filter_set = HistoryFilter
     object = Invoice
-    paginate_by = 10
 
     def get_queryset(self):
         queryset = super(SelectRelatedMixin, self).get_queryset()
-        config = RequestConfig(self.request, paginate={"per_page": self.paginate_by})
+        config = RequestConfig(self.request)
         user = User.objects.get(pk=self.request.user.id)
 
         customer = HistoryTable(queryset.select_related(*self.select_related).filter(customer=user.customer))
