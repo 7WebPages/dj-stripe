@@ -21,9 +21,8 @@ import stripe
 from . import exceptions
 from .managers import CustomerManager, ChargeManager, TransferManager
 
-from .settings import PAYMENTS_PLANS, INVOICE_FROM_EMAIL, SEND_INVOICE_RECEIPT_EMAILS
-from .settings import PRORATION_POLICY, CANCELLATION_AT_PERIOD_END
-from .settings import plan_from_stripe_id
+from .settings import INVOICE_FROM_EMAIL, SEND_INVOICE_RECEIPT_EMAILS
+from .settings import PRORATION_POLICY
 from .settings import PY3
 from .signals import WEBHOOK_SIGNALS
 from .signals import subscription_made, cancelled, card_changed
@@ -153,7 +152,7 @@ class Event(StripeObject):
             "charge.refunded",
             "charge.dispute.created",
             "charge.dispute.updated",
-            "chagne.dispute.closed",
+            "charge.dispute.closed",
             "customer.created",
             "customer.updated",
             "customer.deleted",
@@ -319,6 +318,7 @@ class TransferChargeFee(TimeStampedModel):
 
 @python_2_unicode_compatible
 class Customer(StripeObject):
+
     user = models.OneToOneField(getattr(settings, 'AUTH_USER_MODEL', 'auth.User'), null=True)
     card_fingerprint = models.CharField(max_length=200, blank=True)
     card_last_4 = models.CharField(max_length=4, blank=True)
@@ -573,13 +573,18 @@ class Customer(StripeObject):
         for charge in cu.charges(**kwargs).data:
             self.record_charge(charge.id)
 
+    def get_interval_by_stripe_id(self, stripe_id):
+        plan = Plan.objects.get(stripe_id=stripe_id)
+
+        return plan.interval
+
     def sync_current_subscription(self, cu=None):
         cu = cu or self.stripe_customer
         sub = cu.subscription
         if sub:
             try:
                 sub_obj = self.current_subscription
-                sub_obj.plan = plan_from_stripe_id(sub.plan.id)
+                sub_obj.plan = self.get_interval_by_stripe_id(sub.plan.id)
                 sub_obj.current_period_start = convert_tstamp(
                     sub.current_period_start
                 )
@@ -596,7 +601,7 @@ class Customer(StripeObject):
             except CurrentSubscription.DoesNotExist:
                 sub_obj = CurrentSubscription.objects.create(
                     customer=self,
-                    plan=plan_from_stripe_id(sub.plan.id),
+                    plan=self.get_interval_by_stripe_id(sub.plan.id),
                     current_period_start=convert_tstamp(
                         sub.current_period_start
                     ),
@@ -629,7 +634,7 @@ class Customer(StripeObject):
 
     def update_plan_quantity(self, quantity, charge_immediately=False):
         self.subscribe(
-            plan=plan_from_stripe_id(
+            plan=self.get_interval_by_stripe_id(
                 self.stripe_customer.subscription.plan.id
             ),
             quantity=quantity,
@@ -643,7 +648,7 @@ class Customer(StripeObject):
         cu = self.stripe_customer
 
         resp = cu.subscriptions.create(
-            plan=PAYMENTS_PLANS[plan]["stripe_plan_id"],
+            plan=Plan.objects.get(stripe_id=plan).stripe_id,
             card=card
         )
 
@@ -670,33 +675,40 @@ class Customer(StripeObject):
 
         return res
 
-    def subscribe(self, plan, quantity=1, trial_days=None,
+    def subscribe(self, stripe_plan_id, quantity=1, trial_days=None,
                   charge_immediately=True, prorate=PRORATION_POLICY):
         cu = self.stripe_customer
         """
         Trial_days corresponds to the value specified by the selected plan
         for the key trial_period_days.
         """
-        if ("trial_period_days" in PAYMENTS_PLANS[plan]):
-            trial_days = PAYMENTS_PLANS[plan]["trial_period_days"]
-        
+
+        plan_object = Plan.objects.get(stripe_id=stripe_plan_id)
+
+        if plan_object.trial_period_days:
+            trial_days = plan_object.trial_period_days
+
         if trial_days:
             resp = cu.update_subscription(
-                plan=PAYMENTS_PLANS[plan]["stripe_plan_id"],
+                plan=plan_object.stripe_id,
                 trial_end=timezone.now() + datetime.timedelta(days=trial_days),
                 prorate=prorate,
                 quantity=quantity
             )
         else:
             resp = cu.update_subscription(
-                plan=PAYMENTS_PLANS[plan]["stripe_plan_id"],
+                plan=plan_object.stripe_id,
                 prorate=prorate,
                 quantity=quantity
             )
         self.sync_current_subscription()
         if charge_immediately:
             self.send_invoice()
-        subscription_made.send(sender=self, plan=plan, stripe_response=resp)
+        subscription_made.send(
+            sender=self,
+            plan=stripe_plan_id,
+            stripe_response=resp
+        )
 
     def charge(self, amount, currency="usd", description=None, send_receipt=True):
         """
@@ -753,7 +765,14 @@ class CurrentSubscription(TimeStampedModel):
     amount = models.DecimalField(decimal_places=2, max_digits=7)
 
     def plan_display(self):
-        return PAYMENTS_PLANS[self.plan]["name"]
+        """
+        Returns current subscription plan name
+        """
+        plan_object = Plan.objects.get(
+            interval=self.plan,
+            amount=self.amount
+        )
+        return plan_object.name
 
     def status_display(self):
         return self.status.replace("_", " ").title()
@@ -800,7 +819,6 @@ class Invoice(TimeStampedModel):
 
     class Meta:
         ordering = ["-date"]
-
 
     def retry(self):
         if not self.paid and not self.closed:
@@ -860,7 +878,7 @@ class Invoice(TimeStampedModel):
             invoice.period_end = period_end
 
             if item.get("plan"):
-                plan = plan_from_stripe_id(item["plan"]["id"])
+                plan = get_interval_by_stripe_id(item["plan"]["id"])
             else:
                 plan = ""
 
@@ -930,7 +948,14 @@ class InvoiceItem(TimeStampedModel):
     quantity = models.IntegerField(null=True)
 
     def plan_display(self):
-        return PAYMENTS_PLANS[self.plan]["name"]
+        """
+        Returns current subscription plan name
+        """
+        plan_object = Plan.objects.get(
+            interval=self.plan,
+            amount=self.amount
+        )
+        return plan_object.name
 
 
 class Charge(StripeObject):

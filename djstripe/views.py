@@ -25,15 +25,14 @@ from .mixins import PaymentsContextMixin, SubscriptionMixin, ListFilteredView
 from .models import CurrentSubscription
 from .models import Customer
 from .models import Event
+from .models import Plan
 from .models import EventProcessingException
 from .models import Charge
 from .models import Invoice
-from .settings import PLAN_LIST
 from .settings import CANCELLATION_AT_PERIOD_END
 from .settings import PRORATION_POLICY_FOR_UPGRADES
 from .settings import PY3
 from .settings import User
-from .settings import PAYMENTS_PLANS
 from .settings import STRIPE_PUBLIC_KEY
 from .settings import SUBSCRIBE_SUCCESS_REDIRECT_URL
 from .filters import HistoryFilter
@@ -132,6 +131,7 @@ class DeleteCardView(LoginRequiredMixin, PaymentsContextMixin, View):
             return self.customer
         self.customer, created = Customer.get_or_create(self.request.user)
         return self.customer
+
     def post(self, request):
         customer = self.get_object()
         customer.cards.retrieve("card_id").delete()
@@ -299,7 +299,6 @@ class AccountView(LoginRequiredMixin,
     # TODO - needs tests
     template_name = "djstripe/account.html"
 
-
     def get_context_data(self, *args, **kwargs):
         context = super(AccountView, self).get_context_data(**kwargs)
         customer, created = Customer.get_or_create(self.request.user)
@@ -309,7 +308,7 @@ class AccountView(LoginRequiredMixin,
             context['subscription'] = customer.current_subscription
         except CurrentSubscription.DoesNotExist:
             context['subscription'] = None
-        context['plans'] = PLAN_LIST
+        context['plans'] = Plan.objects.all()
         return context
 
 
@@ -337,7 +336,7 @@ class SubscribeFormView(
         context = super(SubscribeFormView, self).get_context_data(*args, **kwargs)
         customer, created = Customer.get_or_create(User.objects.get(pk=self.request.user.pk))
         context['cards'] = customer.get_cards.data
-        context['PLAN_LIST'] = PLAN_LIST
+        context['plans'] = Plan.objects.all()
 
         return context
 
@@ -391,27 +390,7 @@ class ChangePlanView(LoginRequiredMixin,
         customer = request.user.customer
         if form.is_valid():
             try:
-                """
-                When a customer upgrades their plan, and PRORATION_POLICY_FOR_UPGRADES is set to True,
-                then we force the proration of his current plan and use it towards the upgraded plan,
-                no matter what PRORATION_POLICY is set to.
-                """
-                if PRORATION_POLICY_FOR_UPGRADES:
-                    current_subscription_amount = customer.current_subscription.amount
-                    selected_plan_name = form.cleaned_data["plan"]
-                    selected_plan = next(
-                        (plan for plan in PLAN_LIST if plan["plan"] == selected_plan_name)
-                    )
-                    selected_plan_price = selected_plan["price"]
-                    if not isinstance(selected_plan["price"], decimal.Decimal):
-                        selected_plan_price = selected_plan["price"] / decimal.Decimal("100")
-                    """ Is it an upgrade """
-                    if selected_plan_price > current_subscription_amount:
-                        customer.subscribe(selected_plan_name, prorate=True)
-                    else:
-                        customer.subscribe(selected_plan_name)
-                else:
-                    customer.subscribe(form.cleaned_data["plan"])
+                customer.subscribe(form.data.get("plan"))
             except stripe.StripeError as e:
                 self.error = e.message
                 return self.form_invalid(form)

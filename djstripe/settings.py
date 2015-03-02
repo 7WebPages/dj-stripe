@@ -22,13 +22,6 @@ def get_user_model():
 
 User = SimpleLazyObject(get_user_model)
 
-
-def plan_from_stripe_id(stripe_id):
-    for key in PAYMENTS_PLANS.keys():
-        if PAYMENTS_PLANS[key].get("stripe_plan_id") == stripe_id:
-            return key
-
-
 def load_path_attr(path):
     i = path.rfind(".")
     module, attr = path[:i], path[i + 1:]
@@ -47,8 +40,6 @@ def load_path_attr(path):
 
 STRIPE_PUBLIC_KEY = safe_settings.STRIPE_PUBLIC_KEY
 INVOICE_FROM_EMAIL = safe_settings.INVOICE_FROM_EMAIL
-PAYMENTS_PLANS = safe_settings.PAYMENTS_PLANS
-PLAN_CHOICES = safe_settings.PLAN_CHOICES
 PASSWORD_INPUT_RENDER_VALUE = safe_settings.PASSWORD_INPUT_RENDER_VALUE
 PASSWORD_MIN_LENGTH = safe_settings.PASSWORD_MIN_LENGTH
 
@@ -71,12 +62,6 @@ TRIAL_PERIOD_FOR_USER_CALLBACK = getattr(
     "DJSTRIPE_TRIAL_PERIOD_FOR_USER_CALLBACK",
     None
 )
-PLAN_LIST = []
-for p in PAYMENTS_PLANS:
-    if PAYMENTS_PLANS[p].get("stripe_plan_id"):
-        plan = PAYMENTS_PLANS[p]
-        plan['plan'] = p
-        PLAN_LIST.append(plan)
 
 if PY3:
     if isinstance(TRIAL_PERIOD_FOR_USER_CALLBACK, str):
