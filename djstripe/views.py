@@ -359,10 +359,8 @@ class SubscribeFormView(
                         plan=form.cleaned_data['plan'],
                         card=request.POST.get('stripe_token')
                     )
-                    sync_customer(request.user)
                 else:
                     customer.subscribe(form.cleaned_data["plan"])
-                    sync_customer(request.user)
             except stripe.StripeError as e:
                 # add form error here
                 self.error = e.args[0]
