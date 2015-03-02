@@ -19,7 +19,7 @@ PLAN_CHOICES = [(plan.stripe_id, plan.name) for plan in Plan.objects.all()]
 
 class PlanForm(forms.Form):
 
-    plan = forms.ChoiceField(choices=PLAN_CHOICES)
+    plan = forms.CharField(max_length=255)
 
 
 class CancelSubscriptionForm(forms.Form):
