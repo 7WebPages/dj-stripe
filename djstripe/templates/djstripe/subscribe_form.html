@@ -26,9 +26,8 @@
                                 {% if not customer.current_subscription or customer.current_subscription.status == CurrentSubscription.STATUS_CANCELLED %}
                                     action="{% url 'djstripe:subscribe' %}" class="djstripe-subscribe"
                                     data-key="{{ STRIPE_PUBLIC_KEY }}"
-                                    data-amount="{{ plan.price }}"
+                                    data-amount="{{ plan.amount }}"
                                     data-name="{{ plan.name }}"
-                                    data-description="{{ plan.description }}"
                                 {% else %}
                                     data-stripe-key="{{ STRIPE_PUBLIC_KEY }}"
                                     action="{% url 'djstripe:change_plan' %}" class="djstripe-change-plan"
@@ -98,20 +97,19 @@
             </tr>
             </thead>
             <tbody>
-            {% for plan in PLAN_LIST %}
+            {% for plan in plans %}
                 <tr>
                     <td>{{ plan.name }}</td>
-                    <td>${{ plan.price|cents }}</td>
+                    <td>${{ plan.amount|djdiv:100 }}</td>
                     <td>{{ plan.description }}</td>
                     <td>{% if plan.trial_period_days %}{{ plan.trial_period_days }} days{% endif %}</td>
                     <td>
                         <form
-                                {% if not customer.current_subscription or customer.current_subscription.status == CurrentSubscription.STATUS_CANCELLED %}
+                                {% if not customer.current_subscription or customer.current_subscription.status == CurrentSubscription.STATUS_CANCELLED and customer.current_subscription.amount == plan.amount %}
                                     action="{% url 'djstripe:subscribe' %}" class="djstripe-subscribe"
                                     data-key="{{ STRIPE_PUBLIC_KEY }}"
-                                    data-amount="{{ plan.price }}"
+                                    data-amount="{{ plan.amount }}"
                                     data-name="{{ plan.name }}"
-                                    data-description="{{ plan.description }}"
                                 {% else %}
                                     data-stripe-key="{{ STRIPE_PUBLIC_KEY }}"
                                     action="{% url 'djstripe:change_plan' %}" class="djstripe-change-plan"
@@ -120,7 +118,7 @@
 
 
                             {% csrf_token %}
-                            <input type="hidden" name="plan" value="{{ plan.plan }}" />
+                            <input type="hidden" name="plan" value="{{ plan.stripe_id }}" />
                             <input name="stripe_token" type="hidden" />
                         {% if message %}
                         {% else %}
@@ -128,11 +126,11 @@
                             {% if not customer.current_subscription or customer.current_subscription.status == CurrentSubscription.STATUS_CANCELLED %}
                                 <!-- do nothing -->
                                 <button type="submit">Subscribe</button>
-                            {% elif customer.current_subscription.amount < plan.price|djdiv:100 %}
+                            {% elif customer.current_subscription.amount < plan.amount|djdiv:100 %}
                                 <button type="submit">Select as default</button>
-                            {% elif customer.current_subscription.plan == plan.plan and customer.current_subscription.status != CurrentSubscription.STATUS_CANCELLED %}
+                            {% elif customer.current_subscription.plan == plan.plan and customer.current_subscription.status != CurrentSubscription.STATUS_CANCELLED and customer.current_subscription.amount == plan.amount %}
                                 ✔
-                            {% elif customer.current_subscription.amount > plan.price|djdiv:100 %}
+                            {% elif customer.current_subscription.amount > plan.amount|djdiv:100 %}
                                 <button type="submit">Select as default</button>
                             {% endif %}
                         {% endif %}
@@ -174,7 +172,7 @@
           });
           return false;
         });
-        {% if PLAN_LIST|length > 1 %}
+        {% if plans|length > 1 %}
           $('.djstripe-change-plan').click(function(e){
               $("button[type=submit]").attr("disabled", "true");
               $('#in-progress').modal({"keyboard": false})
