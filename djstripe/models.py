@@ -39,6 +39,12 @@ if PY3:
     unicode = str
 
 
+def get_interval_by_stripe_id(stripe_id):
+    plan = Plan.objects.get(stripe_id=stripe_id)
+
+    return plan.interval
+
+
 def convert_tstamp(response, field_name=None):
     try:
         if field_name and response[field_name]:
@@ -573,18 +579,13 @@ class Customer(StripeObject):
         for charge in cu.charges(**kwargs).data:
             self.record_charge(charge.id)
 
-    def get_interval_by_stripe_id(self, stripe_id):
-        plan = Plan.objects.get(stripe_id=stripe_id)
-
-        return plan.interval
-
     def sync_current_subscription(self, cu=None):
         cu = cu or self.stripe_customer
         sub = cu.subscription
         if sub:
             try:
                 sub_obj = self.current_subscription
-                sub_obj.plan = self.get_interval_by_stripe_id(sub.plan.id)
+                sub_obj.plan = get_interval_by_stripe_id(sub.plan.id)
                 sub_obj.current_period_start = convert_tstamp(
                     sub.current_period_start
                 )
@@ -601,7 +602,7 @@ class Customer(StripeObject):
             except CurrentSubscription.DoesNotExist:
                 sub_obj = CurrentSubscription.objects.create(
                     customer=self,
-                    plan=self.get_interval_by_stripe_id(sub.plan.id),
+                    plan=get_interval_by_stripe_id(sub.plan.id),
                     current_period_start=convert_tstamp(
                         sub.current_period_start
                     ),
@@ -634,7 +635,7 @@ class Customer(StripeObject):
 
     def update_plan_quantity(self, quantity, charge_immediately=False):
         self.subscribe(
-            plan=self.get_interval_by_stripe_id(
+            plan=get_interval_by_stripe_id(
                 self.stripe_customer.subscription.plan.id
             ),
             quantity=quantity,
