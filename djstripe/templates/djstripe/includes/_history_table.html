@@ -4,23 +4,9 @@
 {% load crispy_forms_tags %}
 
 <div id="history-table">
-<h2>Payment History <img class="in-progress-gif" src="{% static 'img/in-progress.gif' %}" /></h2>
-    <div class="row">
-        <div class="col-md-4">
-            <div class="well well-sm" style="width: 210px;">
-                <form action="." method="get">
-                    {{ filter.form }}
-                    <p><input class="btn btn-default" type="submit" value="Filter"></p>
-                </form>
-            </div>
-        </div>
-        <div class="col-md-8">
-            {% render_table object_list "djstripe/includes/_table.html" %}
-        </div>
-    </div>
+    {% render_table object_list "djstripe/includes/_table.html" %}
 </div>
 
 {% block javascript %}
 
 {% endblock javascript %}
-

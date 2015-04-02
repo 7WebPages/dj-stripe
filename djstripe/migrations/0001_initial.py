@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
-import datetime
+from south.utils import datetime_utils as datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-
-try:
-    from django.contrib.auth import get_user_model
-except ImportError:  # django < 1.5
-    from django.contrib.auth.models import User
-else:
-    User = get_user_model()
 
 
 class Migration(SchemaMigration):
@@ -34,9 +27,9 @@ class Migration(SchemaMigration):
             ('modified', self.gf('model_utils.fields.AutoLastModifiedField')(default=datetime.datetime.now)),
             ('stripe_id', self.gf('django.db.models.fields.CharField')(unique=True, max_length=50)),
             ('kind', self.gf('django.db.models.fields.CharField')(max_length=250)),
-            ('livemode', self.gf('django.db.models.fields.BooleanField')()),
+            ('livemode', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('customer', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['djstripe.Customer'], null=True)),
-            ('webhook_message', self.gf('jsonfield.fields.JSONField')(default={})),
+            ('webhook_message', self.gf('jsonfield.fields.JSONField')()),
             ('validated_message', self.gf('jsonfield.fields.JSONField')(null=True)),
             ('valid', self.gf('django.db.models.fields.NullBooleanField')(null=True, blank=True)),
             ('processed', self.gf('django.db.models.fields.BooleanField')(default=False)),
@@ -90,11 +83,19 @@ class Migration(SchemaMigration):
             ('created', self.gf('model_utils.fields.AutoCreatedField')(default=datetime.datetime.now)),
             ('modified', self.gf('model_utils.fields.AutoLastModifiedField')(default=datetime.datetime.now)),
             ('stripe_id', self.gf('django.db.models.fields.CharField')(unique=True, max_length=50)),
-            ('user', self.gf('django.db.models.fields.related.OneToOneField')(to=User, unique=True, null=True)),
+            ('user', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['accounts.User'], unique=True, null=True)),
             ('card_fingerprint', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
             ('card_last_4', self.gf('django.db.models.fields.CharField')(max_length=4, blank=True)),
             ('card_kind', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
             ('date_purged', self.gf('django.db.models.fields.DateTimeField')(null=True)),
+            ('address_city', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('address_country', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('address_line1', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('address_line2', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('address_state', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('address_zip', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('card_name', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('valid_payment_method', self.gf('django.db.models.fields.BooleanField')(default=False)),
         ))
         db.send_create_signal(u'djstripe', ['Customer'])
 
@@ -108,6 +109,7 @@ class Migration(SchemaMigration):
             ('quantity', self.gf('django.db.models.fields.IntegerField')()),
             ('start', self.gf('django.db.models.fields.DateTimeField')()),
             ('status', self.gf('django.db.models.fields.CharField')(max_length=25)),
+            ('cancel_at_period_end', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('canceled_at', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('current_period_end', self.gf('django.db.models.fields.DateTimeField')(null=True)),
             ('current_period_start', self.gf('django.db.models.fields.DateTimeField')(null=True)),
@@ -127,8 +129,8 @@ class Migration(SchemaMigration):
             ('customer', self.gf('django.db.models.fields.related.ForeignKey')(related_name=u'invoices', to=orm['djstripe.Customer'])),
             ('attempted', self.gf('django.db.models.fields.NullBooleanField')(null=True, blank=True)),
             ('attempts', self.gf('django.db.models.fields.PositiveIntegerField')(null=True)),
-            ('closed', self.gf('django.db.models.fields.BooleanField')()),
-            ('paid', self.gf('django.db.models.fields.BooleanField')()),
+            ('closed', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('paid', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('period_end', self.gf('django.db.models.fields.DateTimeField')()),
             ('period_start', self.gf('django.db.models.fields.DateTimeField')()),
             ('subtotal', self.gf('django.db.models.fields.DecimalField')(max_digits=7, decimal_places=2)),
@@ -149,7 +151,7 @@ class Migration(SchemaMigration):
             ('currency', self.gf('django.db.models.fields.CharField')(max_length=10)),
             ('period_start', self.gf('django.db.models.fields.DateTimeField')()),
             ('period_end', self.gf('django.db.models.fields.DateTimeField')()),
-            ('proration', self.gf('django.db.models.fields.BooleanField')()),
+            ('proration', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('line_type', self.gf('django.db.models.fields.CharField')(max_length=50)),
             ('description', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
             ('plan', self.gf('django.db.models.fields.CharField')(max_length=100, blank=True)),
@@ -178,6 +180,21 @@ class Migration(SchemaMigration):
             ('charge_created', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
         ))
         db.send_create_signal(u'djstripe', ['Charge'])
+
+        # Adding model 'Plan'
+        db.create_table(u'djstripe_plan', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('model_utils.fields.AutoCreatedField')(default=datetime.datetime.now)),
+            ('modified', self.gf('model_utils.fields.AutoLastModifiedField')(default=datetime.datetime.now)),
+            ('stripe_id', self.gf('django.db.models.fields.CharField')(unique=True, max_length=50)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=100)),
+            ('currency', self.gf('django.db.models.fields.CharField')(max_length=10)),
+            ('interval', self.gf('django.db.models.fields.CharField')(max_length=10)),
+            ('interval_count', self.gf('django.db.models.fields.IntegerField')(default=1, null=True)),
+            ('amount', self.gf('django.db.models.fields.DecimalField')(max_digits=7, decimal_places=2)),
+            ('trial_period_days', self.gf('django.db.models.fields.IntegerField')(null=True)),
+        ))
+        db.send_create_signal(u'djstripe', ['Plan'])
 
 
     def backwards(self, orm):
@@ -208,8 +225,30 @@ class Migration(SchemaMigration):
         # Deleting model 'Charge'
         db.delete_table(u'djstripe_charge')
 
+        # Deleting model 'Plan'
+        db.delete_table(u'djstripe_plan')
+
 
     models = {
+        u'accounts.user': {
+            'Meta': {'object_name': 'User'},
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'email': ('django.db.models.fields.EmailField', [], {'unique': 'True', 'max_length': '75', 'db_index': 'True'}),
+            'first_logged_in': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
+            'first_time_on_page': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "u'user_set'", 'blank': 'True', 'to': u"orm['auth.Group']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_accepts_terms': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
+            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "u'user_set'", 'blank': 'True', 'to': u"orm['auth.Permission']"}),
+            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30', 'db_index': 'True'})
+        },
         u'auth.group': {
             'Meta': {'object_name': 'Group'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -253,6 +292,7 @@ class Migration(SchemaMigration):
         u'djstripe.currentsubscription': {
             'Meta': {'object_name': 'CurrentSubscription'},
             'amount': ('django.db.models.fields.DecimalField', [], {'max_digits': '7', 'decimal_places': '2'}),
+            'cancel_at_period_end': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'canceled_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'created': ('model_utils.fields.AutoCreatedField', [], {'default': 'datetime.datetime.now'}),
             'current_period_end': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
@@ -270,15 +310,23 @@ class Migration(SchemaMigration):
         },
         u'djstripe.customer': {
             'Meta': {'object_name': 'Customer'},
+            'address_city': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'address_country': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'address_line1': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'address_line2': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'address_state': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'address_zip': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'card_fingerprint': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
             'card_kind': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
             'card_last_4': ('django.db.models.fields.CharField', [], {'max_length': '4', 'blank': 'True'}),
+            'card_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'created': ('model_utils.fields.AutoCreatedField', [], {'default': 'datetime.datetime.now'}),
             'date_purged': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('model_utils.fields.AutoLastModifiedField', [], {'default': 'datetime.datetime.now'}),
             'stripe_id': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '50'}),
-            'user': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['users.User']", 'unique': 'True', 'null': 'True'})
+            'user': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['accounts.User']", 'unique': 'True', 'null': 'True'}),
+            'valid_payment_method': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         u'djstripe.event': {
             'Meta': {'object_name': 'Event'},
@@ -286,13 +334,13 @@ class Migration(SchemaMigration):
             'customer': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['djstripe.Customer']", 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'kind': ('django.db.models.fields.CharField', [], {'max_length': '250'}),
-            'livemode': ('django.db.models.fields.BooleanField', [], {}),
+            'livemode': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'modified': ('model_utils.fields.AutoLastModifiedField', [], {'default': 'datetime.datetime.now'}),
             'processed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'stripe_id': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '50'}),
             'valid': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'blank': 'True'}),
             'validated_message': ('jsonfield.fields.JSONField', [], {'null': 'True'}),
-            'webhook_message': ('jsonfield.fields.JSONField', [], {'default': '{}'})
+            'webhook_message': ('jsonfield.fields.JSONField', [], {})
         },
         u'djstripe.eventprocessingexception': {
             'Meta': {'object_name': 'EventProcessingException'},
@@ -309,13 +357,13 @@ class Migration(SchemaMigration):
             'attempted': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'blank': 'True'}),
             'attempts': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
             'charge': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'closed': ('django.db.models.fields.BooleanField', [], {}),
+            'closed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'created': ('model_utils.fields.AutoCreatedField', [], {'default': 'datetime.datetime.now'}),
             'customer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "u'invoices'", 'to': u"orm['djstripe.Customer']"}),
             'date': ('django.db.models.fields.DateTimeField', [], {}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('model_utils.fields.AutoLastModifiedField', [], {'default': 'datetime.datetime.now'}),
-            'paid': ('django.db.models.fields.BooleanField', [], {}),
+            'paid': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'period_end': ('django.db.models.fields.DateTimeField', [], {}),
             'period_start': ('django.db.models.fields.DateTimeField', [], {}),
             'stripe_id': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
@@ -335,9 +383,22 @@ class Migration(SchemaMigration):
             'period_end': ('django.db.models.fields.DateTimeField', [], {}),
             'period_start': ('django.db.models.fields.DateTimeField', [], {}),
             'plan': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'proration': ('django.db.models.fields.BooleanField', [], {}),
+            'proration': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'quantity': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'stripe_id': ('django.db.models.fields.CharField', [], {'max_length': '50'})
+        },
+        u'djstripe.plan': {
+            'Meta': {'object_name': 'Plan'},
+            'amount': ('django.db.models.fields.DecimalField', [], {'max_digits': '7', 'decimal_places': '2'}),
+            'created': ('model_utils.fields.AutoCreatedField', [], {'default': 'datetime.datetime.now'}),
+            'currency': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'interval': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'interval_count': ('django.db.models.fields.IntegerField', [], {'default': '1', 'null': 'True'}),
+            'modified': ('model_utils.fields.AutoLastModifiedField', [], {'default': 'datetime.datetime.now'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
+            'stripe_id': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '50'}),
+            'trial_period_days': ('django.db.models.fields.IntegerField', [], {'null': 'True'})
         },
         u'djstripe.transfer': {
             'Meta': {'object_name': 'Transfer'},
@@ -375,24 +436,6 @@ class Migration(SchemaMigration):
             'kind': ('django.db.models.fields.CharField', [], {'max_length': '150'}),
             'modified': ('model_utils.fields.AutoLastModifiedField', [], {'default': 'datetime.datetime.now'}),
             'transfer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "u'charge_fee_details'", 'to': u"orm['djstripe.Transfer']"})
-        },
-        u'users.user': {
-            'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "u'user_set'", 'blank': 'True', 'to': u"orm['auth.Group']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'location': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
-            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'tagline': ('django.db.models.fields.CharField', [], {'max_length': '176', 'blank': 'True'}),
-            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "u'user_set'", 'blank': 'True', 'to': u"orm['auth.Permission']"}),
-            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         }
     }
 

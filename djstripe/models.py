@@ -39,12 +39,6 @@ if PY3:
     unicode = str
 
 
-def get_interval_by_stripe_id(stripe_id):
-    plan = Plan.objects.get(stripe_id=stripe_id)
-
-    return plan.interval
-
-
 def convert_tstamp(response, field_name=None):
     try:
         if field_name and response[field_name]:
@@ -440,16 +434,6 @@ class Customer(StripeObject):
         current_subscription.canceled_at = convert_tstamp(sub, "canceled_at") or timezone.now()
         current_subscription.save()
         cancelled.send(sender=self, stripe_response=sub)
-        try:
-            # Set account_balance to 0 after refund
-            # customer = stripe.Customer.retrieve(self.stripe_id)
-            # customer.account_balance = 0
-            # customer.save()
-
-            # Fefund after unsubscribe
-            self.charges.filter(amount=current_subscription.amount, refunded=False).last().refund()
-        except:
-            pass
         return current_subscription
 
     def cancel(self, at_period_end=True):
@@ -502,14 +486,15 @@ class Customer(StripeObject):
         card = cu.cards.retrieve(token)
         card.delete()
 
-    def update_card(self, token,
-                    city,
+    def update_card(self,
+                    token,
+                    name,
+                    zip_code,
                     country,
-                    line1,
-                    line2,
-                    state,
-                    address_zip,
-                    name):
+                    city,
+                    address,
+                    state
+                    ):
         cu = self.stripe_customer
         card_new = cu.cards.create(card=token)
         cu.default_card = card_new.id
@@ -520,26 +505,16 @@ class Customer(StripeObject):
         self.card_kind = cu.active_card.type
         self.address_city = city
         self.address_country = country
-        self.address_line1 = line1
-        if line2:
-            self.address_line2 = line2
+        self.address_line1 = address
         self.address_state = state
-        self.address_zip = address_zip
+        self.address_zip = zip_code
         self.card_name = name
         self.valid_payment_method = True
         self.save()
-        if city:
-            cu.active_card.address_city = city
-        if country:
-            cu.active_card.address_country = country
-        if state:
-            cu.active_card.address_state = state
-        if line1:
-            cu.active_card.address_line1 = line1
-        if line2:
-            cu.active_card.address_line2 = line2
-        if address_zip:
-            cu.active_card.address_zip = address_zip
+        cu.active_card.address_city = city
+        cu.active_card.address_country = country
+        cu.active_card.address_line1 = address
+        cu.active_card.address_zip = zip_code
         cu.active_card.name = name
         cu.active_card.save()
         card_changed.send(sender=self, stripe_response=cu)
@@ -585,7 +560,7 @@ class Customer(StripeObject):
         if sub:
             try:
                 sub_obj = self.current_subscription
-                sub_obj.plan = get_interval_by_stripe_id(sub.plan.id)
+                sub_obj.plan = sub.plan.id
                 sub_obj.current_period_start = convert_tstamp(
                     sub.current_period_start
                 )
@@ -602,7 +577,7 @@ class Customer(StripeObject):
             except CurrentSubscription.DoesNotExist:
                 sub_obj = CurrentSubscription.objects.create(
                     customer=self,
-                    plan=get_interval_by_stripe_id(sub.plan.id),
+                    plan=sub.plan.id,
                     current_period_start=convert_tstamp(
                         sub.current_period_start
                     ),
@@ -635,9 +610,7 @@ class Customer(StripeObject):
 
     def update_plan_quantity(self, quantity, charge_immediately=False):
         self.subscribe(
-            plan=get_interval_by_stripe_id(
-                self.stripe_customer.subscription.plan.id
-            ),
+            plan=self.stripe_customer.subscription.plan.id,
             quantity=quantity,
             charge_immediately=charge_immediately
         )
@@ -767,13 +740,12 @@ class CurrentSubscription(TimeStampedModel):
 
     def plan_display(self):
         """
-        Returns current subscription plan name
+        Returns current subscription plan
         """
         plan_object = Plan.objects.get(
-            interval=self.plan,
-            amount=self.amount
+            stripe_id=self.plan
         )
-        return plan_object.name
+        return plan_object
 
     def status_display(self):
         return self.status.replace("_", " ").title()
@@ -879,7 +851,7 @@ class Invoice(TimeStampedModel):
             invoice.period_end = period_end
 
             if item.get("plan"):
-                plan = get_interval_by_stripe_id(item["plan"]["id"])
+                plan = item["plan"]["id"]
             else:
                 plan = ""
 
@@ -953,10 +925,9 @@ class InvoiceItem(TimeStampedModel):
         Returns current subscription plan name
         """
         plan_object = Plan.objects.get(
-            interval=self.plan,
-            amount=self.amount
+            stripe_id=self.plan
         )
-        return plan_object.name
+        return plan_object
 
 
 class Charge(StripeObject):
@@ -1080,6 +1051,11 @@ class Plan(StripeObject):
                                  null=False)
     trial_period_days = models.IntegerField(null=True)
 
+    description = models.TextField(
+        null=True,
+        blank=True
+    )
+
     def __str__(self):
         return self.name
 
@@ -1104,6 +1080,7 @@ class Plan(StripeObject):
             interval=kwargs['interval'],
             interval_count=kwargs.get('interval_count', None),
             name=kwargs['name'],
+            description=kwargs.get('description'),
             trial_period_days=kwargs.get('trial_period_days'),
         )
 
@@ -1136,3 +1113,7 @@ class Plan(StripeObject):
     def stripe_plan(self):
         """Return the plan data from Stripe."""
         return stripe.Plan.retrieve(self.stripe_id)
+
+    def get_plan_description(self):
+        description_items = self.description.split('\r\n')
+        return description_items

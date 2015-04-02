@@ -14,11 +14,12 @@ from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+import stripe
 from braces.views import CsrfExemptMixin
 from braces.views import FormValidMessageMixin
 from braces.views import LoginRequiredMixin
 from braces.views import SelectRelatedMixin
-import stripe
+from constance import config
 
 from .forms import PlanForm, CancelSubscriptionForm
 from .mixins import PaymentsContextMixin, SubscriptionMixin, ListFilteredView
@@ -129,7 +130,9 @@ class DeleteCardView(LoginRequiredMixin, PaymentsContextMixin, View):
     def get_object(self):
         if hasattr(self, "customer"):
             return self.customer
-        self.customer, created = Customer.get_or_create(self.request.user)
+        self.customer, created = Customer.get_or_create(
+            User.objects.get(pk=self.request.user.pk)
+        )
         return self.customer
 
     def post(self, request):
@@ -146,23 +149,31 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
     def get_object(self):
         if hasattr(self, "customer"):
             return self.customer
-        self.customer, created = Customer.get_or_create(self.request.user)
+        self.customer, created = Customer.get_or_create(
+            User.objects.get(pk=self.request.user.pk)
+        )
         return self.customer
 
     def post(self, request, *args, **kwargs):
         customer = self.get_object()
         token = request.POST.get("stripe_token")
-        city = request.POST.get("address-city")
-        country = request.POST.get("address-country")
-        line1 = request.POST.get("address-line1")
-        line2 = request.POST.get("address-line2")
-        state = request.POST.get("address-state")
-        address_zip = request.POST.get("address-zip")
         name = request.POST.get("card-name")
+        zip_code = request.POST.get("zip-code")
+        country = request.POST.get("country")
+        city = request.POST.get("city")
+        address = request.POST.get("address")
+        state = request.POST.get("state")
         try:
             send_invoice = customer.card_fingerprint == ""
-            customer.update_card(token, city, country, line1,
-                                 line2, state, address_zip, name)
+            customer.update_card(
+                token,
+                name,
+                zip_code,
+                country,
+                city,
+                address,
+                state
+            )
             if send_invoice:
                 customer.send_invoice()
             customer.retry_unpaid_invoices()
@@ -181,7 +192,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
 
     def get_post_success_url(self):
         """ Makes it easier to do custom dj-stripe integrations. """
-        return reverse("djstripe:account")
+        return reverse("accounts:billing")
 
 
 class CancelSubscriptionView(LoginRequiredMixin,
@@ -336,6 +347,8 @@ class SubscribeFormView(
         context = super(SubscribeFormView, self).get_context_data(*args, **kwargs)
         customer, created = Customer.get_or_create(User.objects.get(pk=self.request.user.pk))
         context['cards'] = customer.get_cards.data
+        trial_description_items = config.TRIAL_DESCRIPTION.split('\r\n')
+        context['trial_description_items'] = trial_description_items
         context['plans'] = Plan.objects.all()
 
         return context

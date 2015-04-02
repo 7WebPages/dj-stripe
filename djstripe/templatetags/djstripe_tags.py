@@ -22,12 +22,3 @@ def djdiv(value, arg):
         except Exception:
             return ''
 division.is_safe = False
-
-
-@register.filter
-def cents(value):
-    value = str(value)
-    dollars = value[:-2]
-    cents = value[-2:]
-
-    return "{0}, {1}".format(dollars, cents)

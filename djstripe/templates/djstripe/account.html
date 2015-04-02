@@ -6,59 +6,71 @@
     {{ block.super }}
 
     </button>
-    <div class="container">
         <div class="row">
             <div class="col-xs-12">
                 {% include "djstripe/includes/_subscription_status.html" %}
-                <h2>Account Information</h2>
             </div>
         </div>
         <div class="row">
             <div class="col-xs-2">
                 <p>
-                    <a class="btn btn-primary pull-right" href="{% url 'djstripe:change_card' %}">Add Card</a>
                 </p>
             </div>
         </div>
 
         <div class="row">
             <div class="col-xs-12">
-                <table class="table table-hover" id="card-list">
-                    <thead>
-                    <tr>
-                        <th><b>Card Type</b></th>
-                        <th><b>Last 4 of card</b></th>
-                        <th><b>Exp date</b></th>
-                        <th><b>Delete</b></th>
-                        <th><b>Default</b></th>
-                    </tr>
-                    </thead>
+                <div class="panel panel-primary">
+                    <div class="panel-heading"><h3 class="panel-title">Account information</h3></div>
+                    <div class="panel-body">
+                        <form action="{% url 'add-card' %}" method="POST">{% csrf_token %}
+                            <script
+                                src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+                                data-key="{{ STRIPE_PUBLIC_KEY }}"
+                                data-name="Add new card"
+                                data-description="Add new card to your account"
+                                data-email="{{ request.user.email }}",
+                                data-label="Add new card",
+                                data-panel-label="Add new card">
+                            </script>
+                        </form>
+                    </div>
+                    <table class="table table-hover" id="card-list">
+                        <thead>
+                            <tr>
+                                <th><b>Card Type</b></th>
+                                <th><b>Last 4 of card</b></th>
+                                <th><b>Exp date</b></th>
+                                <th><b>Delete</b></th>
+                                <th><b>Default</b></th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                    {% for card in cards %}
-                        {% if card.id == customer.get_default_card %}
+                        <tbody>
+                            {% for card in cards %}
+                            {% if card.id == customer.get_default_card %}
                             <tr class="success">
                                 <td>{{ card.type }}</td>
                                 <td>{{ card.last4 }}</td>
                                 <td>{{ card.exp_month }}/{{ card.exp_year }}</td>
-                                <td><button id="delete" data-cid="{{ card.id }}">Delete</button></td>
+                                <td></td>
                                 <td></td>
                             </tr>
-                        {% elif card.id != customer.get_default_card %}
+                            {% elif card.id != customer.get_default_card %}
                             <tr>
                                 <td>{{ card.type }}</td>
                                 <td>{{ card.last4 }}</td>
                                 <td>{{ card.exp_month }}/{{ card.exp_year }}</td>
-                                <td><button id="delete" data-cid="{{ card.id }}">Delete</button></td>
-                                <td><button id="default" data-cid="{{ card.id }}">Default</button></td>
+                                <td><button id="delete" class="btn btn-danger" data-cid="{{ card.id }}">Delete</button></td>
+                                <td><button id="default" class="btn btn-default" data-cid="{{ card.id }}">Default</button></td>
                             </tr>
-                        {% endif %}
-                    {% endfor %}
-                    </tbody>
-                </table>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
 {% endblock content %}
 
 {% block javascript %}
@@ -85,16 +97,18 @@
     <script type="text/javascript">
         $(document).on('click', '#delete', function(data) {
             var cid = $(this).data("cid");
-            $("#delete").button("loading");
-            $('#default').prop('disabled', true);
-            $.ajax({
-                type: 'POST',
-                url: '{% url 'djstripe:card' %}',
-                data: {'status': 'delete', 'id': cid},
-                success: function(data) {
-                    location.reload();
-                }
-            });
+            if (window.confirm("Are you shure?")) {
+                $("#delete").button("loading");
+                $('#default').prop('disabled', true);
+                $.ajax({
+                    type: 'POST',
+                    url: '{% url 'djstripe:card' %}',
+                    data: {'status': 'delete', 'id': cid},
+                    success: function(data) {
+                        location.reload();
+                    }
+                });
+            }
 
         });
 

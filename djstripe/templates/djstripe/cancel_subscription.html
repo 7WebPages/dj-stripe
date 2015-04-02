@@ -3,6 +3,14 @@
 {% block title %}Cancel Subscription{% endblock title %}
 
 {% block content %}
+<div class="row">
+    <div class="col-xs-12">
+        <ul class="breadcrumb">
+          <li><a href="{% url 'djstripe:account' %}">Home</a></li>
+          <li class="active">Cancel Subscription</li>
+        </ul>
+    </div>
+</div>
 
 <div class="row">
     <div class="col-xs-12">
@@ -29,7 +37,7 @@
         </p>
 
         {% block cancellation_ramifications %}
-        <h3>What you lose by cancelling your subscription:</h3>
+        <h3>What you lose by cancelling your subscription:</h2>
         <ul>
           <li>Access to subscription-only content.</li>
           <li>Ability to use subscription-only features.</li>
