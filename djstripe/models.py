@@ -507,14 +507,16 @@ class Customer(StripeObject):
         self.address_country = country
         self.address_line1 = address
         self.address_state = state
-        self.address_zip = zip_code
+        if zip_code:
+            self.address_zip = zip_code
         self.card_name = name
         self.valid_payment_method = True
         self.save()
         cu.active_card.address_city = city
         cu.active_card.address_country = country
         cu.active_card.address_line1 = address
-        cu.active_card.address_zip = zip_code
+        if zip_code:
+            cu.active_card.address_zip = zip_code
         cu.active_card.name = name
         cu.active_card.save()
         card_changed.send(sender=self, stripe_response=cu)
