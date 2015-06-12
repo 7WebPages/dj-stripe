@@ -37,17 +37,13 @@
                 <input name="stripe_token" type="hidden" />
                         {% if message %}
                         {% else %}
-                            <!-- disable this when clicked -->
-              {% if not customer.current_subscription or customer.current_subscription.status == CurrentSubscription.STATUS_CANCELLED %}
-                                <!-- do nothing -->
-                                <button class="btn btn-lg btn-block btn-success" type="submit">Subscribe</button>
-              {% elif customer.current_subscription.plan == plan.interval and customer.current_subscription.amount == plan.amount %}
-                                <button class="btn btn-lg btn-block btn-success" type="submit">Select as default</button>
-              {% elif customer.current_subscription.amount < plan.amount %}
-                                <a class="btn btn-lg btn-block btn-danger" href="{% url 'djstripe:cancel_subscription' %}" class="btn btn-danger pull-right">Unsubscribe</a>
-              {% elif customer.current_subscription.amount > plan.amount %}
-                                <button class="btn btn-lg btn-block btn-success" type="submit">Select as default</button>
-                            {% endif %}
+                        <!-- disable this when clicked -->
+                        {% if not customer.current_subscription.plan == plan.stripe_id %}
+                        <!-- do nothing -->
+                        <button class="btn btn-lg btn-block btn-success" type="submit">Subscribe</button>
+                        {% elif customer.current_subscription.plan == plan.stripe_id %}
+                        <a class="btn btn-lg btn-block btn-danger" href="{% url 'djstripe:cancel_subscription' %}" class="btn btn-danger pull-right">Unsubscribe</a>
+                        {% endif %}
                         {% endif %}
             </form>
         </div>
@@ -61,6 +57,7 @@
 {{ block.super }}
 
 <script src="https://checkout.stripe.com/v2/checkout.js"></script>
+{% if not cards %}
 <script text="text/javascript">
     $(function() {
 
@@ -95,6 +92,7 @@
         {% endif %}
     });
 </script>
+{% endif %}
 
 
 {% endblock javascript %}

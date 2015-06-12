@@ -34,7 +34,6 @@ from .settings import PRORATION_POLICY_FOR_UPGRADES
 from .settings import PY3
 from .settings import User
 from .settings import STRIPE_PUBLIC_KEY
-from .settings import SUBSCRIBE_SUCCESS_REDIRECT_URL
 from .filters import HistoryFilter
 from .sync import sync_customer
 from stripe.error import InvalidRequestError
@@ -328,8 +327,6 @@ class SubscribeFormView(
 
     @property
     def success_url(self):
-        if SUBSCRIBE_SUCCESS_REDIRECT_URL:
-            return reverse_lazy(SUBSCRIBE_SUCCESS_REDIRECT_URL)
         return reverse_lazy('djstripe:history')
 
     def get_context_data(self, *args, **kwargs):
@@ -381,8 +378,6 @@ class ChangePlanView(LoginRequiredMixin,
 
     @property
     def success_url(self):
-        if SUBSCRIBE_SUCCESS_REDIRECT_URL:
-            return reverse_lazy(SUBSCRIBE_SUCCESS_REDIRECT_URL)
         return reverse_lazy('djstripe:history')
 
     def post(self, request, *args, **kwargs):

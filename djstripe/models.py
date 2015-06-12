@@ -39,12 +39,6 @@ if PY3:
     unicode = str
 
 
-def get_interval_by_stripe_id(stripe_id):
-    plan = Plan.objects.get(stripe_id=stripe_id)
-
-    return plan.interval
-
-
 def convert_tstamp(response, field_name=None):
     try:
         if field_name and response[field_name]:
@@ -585,7 +579,7 @@ class Customer(StripeObject):
         if sub:
             try:
                 sub_obj = self.current_subscription
-                sub_obj.plan = get_interval_by_stripe_id(sub.plan.id)
+                sub_obj.plan = sub.plan.id
                 sub_obj.current_period_start = convert_tstamp(
                     sub.current_period_start
                 )
@@ -602,7 +596,7 @@ class Customer(StripeObject):
             except CurrentSubscription.DoesNotExist:
                 sub_obj = CurrentSubscription.objects.create(
                     customer=self,
-                    plan=get_interval_by_stripe_id(sub.plan.id),
+                    plan=sub.plan.id,
                     current_period_start=convert_tstamp(
                         sub.current_period_start
                     ),
@@ -635,9 +629,7 @@ class Customer(StripeObject):
 
     def update_plan_quantity(self, quantity, charge_immediately=False):
         self.subscribe(
-            plan=get_interval_by_stripe_id(
-                self.stripe_customer.subscription.plan.id
-            ),
+            plan=self.stripe_customer.subscription.plan.id,
             quantity=quantity,
             charge_immediately=charge_immediately
         )
@@ -879,7 +871,7 @@ class Invoice(TimeStampedModel):
             invoice.period_end = period_end
 
             if item.get("plan"):
-                plan = get_interval_by_stripe_id(item["plan"]["id"])
+                plan = item["plan"]["id"]
             else:
                 plan = ""
 
