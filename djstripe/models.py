@@ -534,7 +534,8 @@ class Customer(StripeObject):
             cu.active_card.address_line2 = line2
         if address_zip:
             cu.active_card.address_zip = address_zip
-        cu.active_card.name = name
+        if name:
+            cu.active_card.name = name
         cu.active_card.save()
         card_changed.send(sender=self, stripe_response=cu)
 
