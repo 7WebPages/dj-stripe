@@ -434,16 +434,6 @@ class Customer(StripeObject):
         current_subscription.canceled_at = convert_tstamp(sub, "canceled_at") or timezone.now()
         current_subscription.save()
         cancelled.send(sender=self, stripe_response=sub)
-        try:
-            # Set account_balance to 0 after refund
-            # customer = stripe.Customer.retrieve(self.stripe_id)
-            # customer.account_balance = 0
-            # customer.save()
-
-            # Fefund after unsubscribe
-            self.charges.filter(amount=current_subscription.amount, refunded=False).last().refund()
-        except:
-            pass
         return current_subscription
 
     def cancel(self, at_period_end=True):
