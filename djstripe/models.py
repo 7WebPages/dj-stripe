@@ -1063,7 +1063,7 @@ class Plan(StripeObject):
                                  null=False)
     trial_period_days = models.IntegerField(null=True)
 
-    description = models.TextField()
+    description = models.TextField(description="Description of the plans. Description through a new line")
 
     def __str__(self):
         return self.name
