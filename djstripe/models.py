@@ -1063,6 +1063,8 @@ class Plan(StripeObject):
                                  null=False)
     trial_period_days = models.IntegerField(null=True)
 
+    description = models.TextField()
+
     def __str__(self):
         return self.name
 
