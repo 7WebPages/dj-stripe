@@ -1068,6 +1068,9 @@ class Plan(StripeObject):
     def __str__(self):
         return self.name
 
+    def get_description(self):
+        return self.description.split('\n')
+
     @classmethod
     def create(cls, metadata={}, **kwargs):
         """Create and then return a Plan (both in Stripe, and in our db)."""
