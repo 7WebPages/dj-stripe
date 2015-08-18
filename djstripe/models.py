@@ -1124,3 +1124,7 @@ class Plan(StripeObject):
     def stripe_plan(self):
         """Return the plan data from Stripe."""
         return stripe.Plan.retrieve(self.stripe_id)
+
+    @property
+    def get_yearly_amount_pear_month(self):
+        return self.amount / 12
