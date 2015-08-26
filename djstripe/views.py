@@ -39,6 +39,7 @@ from .sync import sync_customer
 from stripe.error import InvalidRequestError
 import django_tables2 as tables
 from django_tables2 import RequestConfig
+from django_tables2 import BooleanColumn
 
 
 @csrf_exempt
@@ -238,6 +239,8 @@ class WebHook(CsrfExemptMixin, View):
 
 
 class HistoryTable(tables.Table):
+    paid = BooleanColumn(yesno='Paid,Unpaid')
+
     class Meta:
         model = Charge
         fields = ("created",
@@ -268,7 +271,9 @@ class HistoryView(LoginRequiredMixin,
         config = RequestConfig(self.request)
         user = User.objects.get(pk=self.request.user.id)
 
-        customer = HistoryTable(queryset.select_related(*self.select_related).filter(customer=user.customer))
+        customer = HistoryTable(
+            queryset.select_related(*self.select_related).filter(customer=user.customer)
+        )
         config.configure(customer)
         return customer
 
