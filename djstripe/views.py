@@ -166,8 +166,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             if send_invoice:
                 customer.send_invoice()
             customer.retry_unpaid_invoices()
-        except Exception as e:
-            messages.info(request, "Stripe Error")
+        except stripe.StripeError as e:
             return render(
                 request,
                 self.template_name,
@@ -177,6 +176,8 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
                 }
             )
         messages.info(request, "Your card is now updated.")
+        if not customer.current_subscription.amount:
+            messages.info(request, "Please select your subscription.")
         return redirect(self.get_post_success_url())
 
     def get_post_success_url(self):
@@ -331,7 +332,7 @@ class SubscribeFormView(
 
     def get_form_valid_message(self):
         plan_name = self.request.user.customer.current_subscription.plan_display()
-        return "You are now subscribed to {}!".format(plan_name)
+        return "You are now subscribed to {0} plan!".format(plan_name)
 
     @property
     def success_url(self):
@@ -385,7 +386,7 @@ class ChangePlanView(LoginRequiredMixin,
 
     def get_form_valid_message(self):
         plan_name = self.request.user.customer.current_subscription.plan_display()
-        return "You've just changed your plan to {}!".format(plan_name)
+        return "You've just changed your plan to {0}!".format(plan_name)
 
     @property
     def success_url(self):
@@ -397,10 +398,15 @@ class ChangePlanView(LoginRequiredMixin,
         if form.is_valid():
             try:
                 customer.subscribe(form.data.get("plan"))
+            except stripe.CardError as e:
+                self.error = e.message
+                messages.add_message(request, messages.ERROR, self.error)
+                messages.add_message(request, messages.INFO, "Try to use another card and then try to subscribe again")
+                return redirect(reverse('djstripe:change_card'))
             except stripe.StripeError as e:
                 self.error = e.message
                 messages.add_message(request, messages.ERROR, self.error)
-                return redirect(reverse('djstripe:change_card'))
+                return self.form_invalid(form)
             except Exception as e:
                 raise e
             return self.form_valid(form)
