@@ -793,7 +793,7 @@ class Invoice(TimeStampedModel):
     attempted = models.NullBooleanField()
     attempts = models.PositiveIntegerField(null=True)
     closed = models.BooleanField(default=False)
-    paid = models.BooleanField(default=False)
+    paid = models.BooleanField(default=False, verbose_name="status")
     period_end = models.DateTimeField()
     period_start = models.DateTimeField()
     subtotal = models.DecimalField(decimal_places=2, max_digits=7)
@@ -955,7 +955,7 @@ class Charge(StripeObject):
         null=True
     )
     description = models.TextField(blank=True)
-    paid = models.NullBooleanField(null=True)
+    paid = models.NullBooleanField(null=True, verbose_name="status")
     disputed = models.NullBooleanField(null=True)
     refunded = models.NullBooleanField(null=True)
     fee = models.DecimalField(decimal_places=2, max_digits=7, null=True)
