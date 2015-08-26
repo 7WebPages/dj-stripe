@@ -240,7 +240,7 @@ class WebHook(CsrfExemptMixin, View):
 
 
 class HistoryTable(tables.Table):
-    paid = BooleanColumn(yesno='Paid,Unpaid')
+    paid = BooleanColumn(yesno='Paid,Failed')
 
     class Meta:
         model = Charge
