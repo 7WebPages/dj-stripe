@@ -328,7 +328,10 @@ class SubscribeFormView(
 
     form_class = PlanForm
     template_name = "djstripe/subscribe_form.html"
-    form_valid_message = "You are now subscribed!"
+
+    def get_form_valid_message(self):
+        plan_name = self.request.user.customer.current_subscription.plan_display()
+        return "You are now subscribed to {}!".format(plan_name)
 
     @property
     def success_url(self):
@@ -379,7 +382,10 @@ class ChangePlanView(LoginRequiredMixin,
 
     form_class = PlanForm
     template_name = "djstripe/subscribe_form.html"
-    form_valid_message = "You've just changed your plan!"
+
+    def get_form_valid_message(self):
+        plan_name = self.request.user.customer.current_subscription.plan_display()
+        return "You've just changed your plan to {}!".format(plan_name)
 
     @property
     def success_url(self):
