@@ -181,7 +181,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
 
     def get_post_success_url(self):
         """ Makes it easier to do custom dj-stripe integrations. """
-        return reverse("djstripe:account")
+        return reverse("djstripe:subscribe")
 
 
 class CancelSubscriptionView(LoginRequiredMixin,
