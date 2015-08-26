@@ -396,6 +396,10 @@ class ChangePlanView(LoginRequiredMixin,
         form = PlanForm(request.POST)
         customer = request.user.customer
         if form.is_valid():
+            if not customer.get_cards.count:
+                messages.add_message(request, messages.INFO, "Please add card to subscribe")
+                return redirect(reverse('djstripe:change_card'))
+
             try:
                 customer.subscribe(form.data.get("plan"))
             except stripe.CardError as e:
@@ -406,7 +410,7 @@ class ChangePlanView(LoginRequiredMixin,
             except stripe.StripeError as e:
                 self.error = e.message
                 messages.add_message(request, messages.ERROR, self.error)
-                return self.form_invalid(form)
+                return redirect(reverse('djstripe:subscribe'))
             except Exception as e:
                 raise e
             return self.form_valid(form)
