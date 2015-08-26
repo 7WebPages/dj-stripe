@@ -393,7 +393,7 @@ class ChangePlanView(LoginRequiredMixin,
                 customer.subscribe(form.data.get("plan"))
             except stripe.StripeError as e:
                 self.error = e.message
-                messages.add_message(request, messages.INFO, self.error)
+                messages.add_message(request, messages.ERROR, self.error)
                 return redirect(reverse('djstripe:change_card'))
             except Exception as e:
                 raise e
