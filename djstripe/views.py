@@ -177,7 +177,11 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             )
         messages.info(request, "Your card is now updated.")
         if not customer.current_subscription.amount:
-            messages.info(request, "Please select your subscription.")
+            try:
+                customer.subscribe(request.session.get('plan'))
+            except stripe.StripeError as e:
+                messages.add_message(request, messages.ERROR, e.message)
+            messages.info(request, "You've successfully subscribed.")
         return redirect(self.get_post_success_url())
 
     def get_post_success_url(self):
@@ -396,8 +400,11 @@ class ChangePlanView(LoginRequiredMixin,
         form = PlanForm(request.POST)
         customer = request.user.customer
         if form.is_valid():
-            if not customer.get_cards.count:
+            selected_plan = Plan.objects.get(stripe_id=form.cleaned_data.get('plan'))
+            if not customer.get_cards.count and selected_plan.amount:
                 messages.add_message(request, messages.INFO, "Please add card to subscribe")
+                # Save plan id in to session
+                request.session['plan'] = form.cleaned_data.get('plan')
                 return redirect(reverse('djstripe:change_card'))
 
             try:
