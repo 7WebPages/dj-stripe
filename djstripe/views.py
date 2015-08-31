@@ -228,7 +228,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
         plan = Plan.objects.get(stripe_id=current_subscription.plan)
         free_plan = Plan.objects.filter(amount=0).first()
 
-        msg = u"Your subscription %s is downgraded to %s plan. " % (plan.name, free_plan.name)
+        msg = u"Your subscription %s is cancelled. " % plan.name
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
