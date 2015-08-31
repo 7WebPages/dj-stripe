@@ -424,7 +424,7 @@ class ChangePlanView(LoginRequiredMixin,
                 request.session['plan'] = None
             except stripe.CardError as e:
                 self.error = e.message
-                msg = "%s. %s" % (self.error, "Try to use another card and then try to subscribe again")
+                msg = "%s. %s" % (self.error, "Please use another card and then we will try to subscribe you again")
                 messages.add_message(request, messages.ERROR, msg)
                 return redirect(reverse('djstripe:change_card'))
             except stripe.StripeError as e:
