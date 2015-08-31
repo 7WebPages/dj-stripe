@@ -147,6 +147,17 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
     # Not done yet
     template_name = "djstripe/change_card.html"
 
+    def get_context_data(self, *args, **kwargs):
+        context = super(ChangeCardView, self).get_context_data(*args, **kwargs)
+
+        plan_obj = None
+        plan_id = request.session.get('plan')
+        if plan_id:
+            plan_obj = Plan.objects.get(stripe_id=plan_id)
+        context['next_plan'] = plan_obj
+
+        return context
+
     def get_object(self):
         if hasattr(self, "customer"):
             return self.customer
