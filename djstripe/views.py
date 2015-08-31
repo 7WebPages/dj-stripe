@@ -232,16 +232,17 @@ class CancelSubscriptionView(LoginRequiredMixin,
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
 
-            try:
-                current_subscription.refund()
-            except stripe.StripeError as e:
-                logger.exception(e)
-                self.error = e.message
-                msg = "Refund failed. %s" % self.error
-                messages.add_message(request, messages.ERROR, msg)
-                return redirect(reverse('djstripe:subscribe'))
+            if plan.amount:
+                try:
+                    current_subscription.refund()
+                except stripe.StripeError as e:
+                    logger.exception(e)
+                    self.error = e.message
+                    msg = "Refund failed. %s" % self.error
+                    messages.add_message(request, messages.ERROR, msg)
+                    return redirect(reverse('djstripe:subscribe'))
 
-            msg += u"Money is refunded."
+                msg += u"Money is refunded."
             
             customer.subscribe(free_plan.stripe_id)
 
@@ -439,6 +440,8 @@ class ChangePlanView(LoginRequiredMixin,
     def post(self, request, *args, **kwargs):
         form = PlanForm(request.POST)
         customer = request.user.customer
+        plan_obj = Plan.objects.get(stripe_id=customer.current_subscription.plan)
+
         if form.is_valid():
             selected_plan = Plan.objects.get(stripe_id=form.cleaned_data.get('plan'))
             # Save plan id in to session
@@ -448,13 +451,14 @@ class ChangePlanView(LoginRequiredMixin,
                 messages.add_message(request, messages.INFO, "Please add card to subscribe")
                 return redirect(reverse('djstripe:change_card'))
 
-            try:
-                customer.current_subscription.refund()
-            except stripe.StripeError as e:
-                logger.exception(e)
-                self.error = e.message
-                msg = "Refund failed. %s" % self.error
-                messages.add_message(request, messages.ERROR, msg)
+            if plan_obj.amount:
+                try:
+                    customer.current_subscription.refund()
+                except stripe.StripeError as e:
+                    logger.exception(e)
+                    self.error = e.message
+                    msg = "Refund failed. %s" % self.error
+                    messages.add_message(request, messages.ERROR, msg)
 
             try:
                 customer.subscribe(form.data.get("plan"))
