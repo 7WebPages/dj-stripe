@@ -341,7 +341,8 @@ class Customer(StripeObject):
     @property
     def get_account_balance(self):
         customer = stripe.Customer.retrieve(self.stripe_id)
-        return customer.account_balance / 100
+        return abs(customer.account_balance / 100)
+
 
     def set_account_balance(self, amount):
         """
