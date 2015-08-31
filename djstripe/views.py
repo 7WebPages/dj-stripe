@@ -205,7 +205,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
                 customer.subscribe(plan_obj.stripe_id)
                 is_subscribed = True
             except stripe.StripeError as e:
-                msg = "Subscription failed(%s). Please try another card" % e.message
+                msg = "Subscription failed. %s Please try another card." % e.message
                 logger.exception(e)
 
                 return render(
