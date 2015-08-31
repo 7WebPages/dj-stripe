@@ -293,7 +293,7 @@ class HistoryView(LoginRequiredMixin,
     object = Invoice
 
     def get_queryset(self):
-        sync_customer(self.request.user)
+        sync_customer(request.user)
         queryset = super(SelectRelatedMixin, self).get_queryset()
         config = RequestConfig(self.request)
         user = User.objects.get(pk=self.request.user.id)
