@@ -222,6 +222,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
                 plan.name,
                 current_subscription.current_period_end
             )
+            messages.info(self.request, msg)
 
         return super(CancelSubscriptionView, self).form_valid(form)
 
