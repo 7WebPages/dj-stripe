@@ -558,7 +558,7 @@ class Customer(StripeObject):
     def sync_invoices(self, cu=None, **kwargs):
         cu = cu or self.stripe_customer
         for invoice in cu.invoices(**kwargs).data:
-            Invoice.sync_from_stripe_data(invoice, send_receipt=False)
+            Invoice.sync_from_stripe_data(invoice, send_receipt=True)
 
     def sync_charges(self, cu=None, **kwargs):
         cu = cu or self.stripe_customer
