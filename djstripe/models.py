@@ -771,6 +771,7 @@ class CurrentSubscription(TimeStampedModel):
         remains_days = remains_days.days
 
         amount = self.amount * (remains_days / duration_days)
+        amount = int(amount)
 
         if amount > 0:
             charge.refund(amount)
