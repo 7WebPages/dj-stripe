@@ -182,7 +182,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             try:
                 plan_obj = Plan.objects.get(stripe_id=plan_id)
                 customer.subscribe(plan_obj.stripe_id)
-                msg = "You successfully subscribed to %s" % plan_obj.name
+                msg = "You successfully subscribed to %s plan" % plan_obj.name
                 messages.info(request, msg)
             except stripe.StripeError as e:
                 msg = "Subscription failed. %s" % e.message
