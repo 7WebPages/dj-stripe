@@ -163,6 +163,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             send_invoice = customer.card_fingerprint == ""
             customer.update_card(token, city, country, line1,
                                  line2, state, address_zip, name)
+            messages.info(request, "Your card is succesfully updated.")
             if send_invoice:
                 customer.send_invoice()
             customer.retry_unpaid_invoices()
@@ -175,13 +176,20 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
                     "stripe_error": e.message
                 }
             )
-        messages.info(request, "Your card is now updated.")
-        if not customer.current_subscription.amount:
+
+        plan_id = request.session.get('plan'):
+        if plan_id:
             try:
-                customer.subscribe(request.session.get('plan'))
+                plan_obj = Plan.objects.get(stripe_id=plan_id)
+                customer.subscribe(plan_obj.stripe_id)
+                msg = "You successfully subscribed to %s" % plan_obj.name
+                messages.info(request, msg)
             except stripe.StripeError as e:
-                messages.add_message(request, messages.ERROR, e.message)
-            messages.info(request, "You've successfully subscribed.")
+                msg = "Subscription failed. %s" % e.message
+                messages.add_message(request, messages.ERROR, msg)
+
+            request.session['plan'] = None
+
         return redirect(self.get_post_success_url())
 
     def get_post_success_url(self):
@@ -203,13 +211,16 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
-            messages.info(self.request, "Your subscription is now cancelled.")
+            # TODO: do refund
+            msg = "Your subscription is cancelled."
+            messages.info(self.request, msg)
             return redirect(reverse("djstripe:account"))
         else:
             # If pro-rate, they get some time to stay.
-            messages.info(self.request, "Your subscription status is now '{a}' until '{b}'".format(
-                    a=current_subscription.status, b=current_subscription.current_period_end
-                )
+            plan = Plan.objects.get(stripe_id=current_subscription.plan)
+            msg = "Your %s subscription is cancelled. The changes will become effective on %s" % (
+                plan.name,
+                current_subscription.current_period_end
             )
 
         return super(CancelSubscriptionView, self).form_valid(form)
@@ -390,7 +401,7 @@ class ChangePlanView(LoginRequiredMixin,
 
     def get_form_valid_message(self):
         plan_name = self.request.user.customer.current_subscription.plan_display()
-        return "You've just changed your plan to {0}!".format(plan_name)
+        return "You successfully subscribed to {0}!".format(plan_name)
 
     @property
     def success_url(self):
@@ -401,18 +412,20 @@ class ChangePlanView(LoginRequiredMixin,
         customer = request.user.customer
         if form.is_valid():
             selected_plan = Plan.objects.get(stripe_id=form.cleaned_data.get('plan'))
+            # Save plan id in to session
+            request.session['plan'] = form.cleaned_data.get('plan')
+
             if not customer.get_cards.count and selected_plan.amount:
                 messages.add_message(request, messages.INFO, "Please add card to subscribe")
-                # Save plan id in to session
-                request.session['plan'] = form.cleaned_data.get('plan')
                 return redirect(reverse('djstripe:change_card'))
 
             try:
                 customer.subscribe(form.data.get("plan"))
+                request.session['plan'] = None
             except stripe.CardError as e:
                 self.error = e.message
-                messages.add_message(request, messages.ERROR, self.error)
-                messages.add_message(request, messages.INFO, "Try to use another card and then try to subscribe again")
+                msg = "%s. %s" % (self.error, "Try to use another card and then try to subscribe again")
+                messages.add_message(request, messages.ERROR, msg)
                 return redirect(reverse('djstripe:change_card'))
             except stripe.StripeError as e:
                 self.error = e.message
