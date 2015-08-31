@@ -165,6 +165,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
         name = request.POST.get("card-name")
 
         is_card_added = False
+        is_subscribed = False
 
         try:
             send_invoice = customer.card_fingerprint == ""
