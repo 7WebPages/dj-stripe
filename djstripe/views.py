@@ -171,7 +171,6 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             customer.update_card(token, city, country, line1,
                                  line2, state, address_zip, name)
             is_card_added = True
-            is_subscribed = True
 
             if send_invoice:
                 customer.send_invoice()
@@ -192,6 +191,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             try:
                 plan_obj = Plan.objects.get(stripe_id=plan_id)
                 customer.subscribe(plan_obj.stripe_id)
+                is_subscribed = True
             except stripe.StripeError as e:
                 msg = "Subscription failed. %s" % e.message
                 messages.add_message(request, messages.ERROR, msg)
