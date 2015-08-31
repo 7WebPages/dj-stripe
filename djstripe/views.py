@@ -236,7 +236,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
         else:
             # If pro-rate, they get some time to stay.
-            msg += "The changes will become effective on %s." % current_subscription.current_period_end.date()
+            msg += "You've unsubscribed. Your plan will be over on the %s." % current_subscription.current_period_end.date()
 
         messages.success(self.request, msg)
 
