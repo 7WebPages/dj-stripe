@@ -177,7 +177,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
                 }
             )
 
-        plan_id = request.session.get('plan'):
+        plan_id = request.session.get('plan')
         if plan_id:
             try:
                 plan_obj = Plan.objects.get(stripe_id=plan_id)
