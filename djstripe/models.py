@@ -765,6 +765,10 @@ class CurrentSubscription(TimeStampedModel):
         invoice = self.customer.invoices.filter(paid=True).latest('date')
         charge = invoice.charges.first()
 
+        # handle case when charge already refunded
+        if charge.refunded:
+            return
+
         duration_days = self.current_period_end.date() - self.current_period_start.date()
         duration_days = duration_days.days
         remains_days = self.current_period_end.date() - datetime.date.today()
