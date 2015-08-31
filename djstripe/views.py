@@ -203,7 +203,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
     # TODO - needs tests
     template_name = "djstripe/cancel_subscription.html"
     form_class = CancelSubscriptionForm
-    success_url = reverse_lazy("djstripe:account")
+    success_url = reverse_lazy("djstripe:history")
 
     def form_valid(self, form):
         customer, created = Customer.get_or_create(self.request.user)
@@ -214,7 +214,6 @@ class CancelSubscriptionView(LoginRequiredMixin,
             # TODO: do refund
             msg = "Your subscription is cancelled."
             messages.info(self.request, msg)
-            return redirect(reverse("djstripe:account"))
         else:
             # If pro-rate, they get some time to stay.
             plan = Plan.objects.get(stripe_id=current_subscription.plan)
