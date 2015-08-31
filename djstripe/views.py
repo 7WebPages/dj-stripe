@@ -151,7 +151,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
         context = super(ChangeCardView, self).get_context_data(*args, **kwargs)
 
         plan_obj = None
-        plan_id = request.session.get('plan')
+        plan_id = self.request.session.get('plan')
         if plan_id:
             plan_obj = Plan.objects.get(stripe_id=plan_id)
         context['next_plan'] = plan_obj
