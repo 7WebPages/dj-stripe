@@ -758,6 +758,17 @@ class CurrentSubscription(TimeStampedModel):
         )
         return plan_object.name
 
+    def get_plan(self):
+        """
+        Returns current subscription plan instance
+        """
+        plan_object = Plan.objects.get(
+            stripe_id=self.plan,
+            amount=self.amount
+        )
+        return plan_object
+
+
     def status_display(self):
         return self.status.replace("_", " ").title()
 
