@@ -756,8 +756,8 @@ class CurrentSubscription(TimeStampedModel):
         invoice = self.customer.invoices.filter(paid=True).latest('date')
         charge = invoice.charges.first()
 
-        duration_days = self.current_period_end.date().days - self.current_period_start.date().days
-        spent_days = datetime.date.today().days - self.current_period_start.date().days
+        duration_days = self.current_period_end.date().day - self.current_period_start.date().day
+        spent_days = datetime.date.today().day - self.current_period_start.date().day
 
         amount = self.amount * (1 - spent_days / duration_days)
 
