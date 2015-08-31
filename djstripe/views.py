@@ -159,11 +159,16 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
         state = request.POST.get("address-state")
         address_zip = request.POST.get("address-zip")
         name = request.POST.get("card-name")
+
+        is_card_added = False
+
         try:
             send_invoice = customer.card_fingerprint == ""
             customer.update_card(token, city, country, line1,
                                  line2, state, address_zip, name)
-            messages.info(request, "Your card is succesfully updated.")
+            is_card_added = True
+            is_subscribed = True
+
             if send_invoice:
                 customer.send_invoice()
             customer.retry_unpaid_invoices()
@@ -182,13 +187,18 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             try:
                 plan_obj = Plan.objects.get(stripe_id=plan_id)
                 customer.subscribe(plan_obj.stripe_id)
-                msg = "You successfully subscribed to %s plan" % plan_obj.name
                 messages.info(request, msg)
             except stripe.StripeError as e:
                 msg = "Subscription failed. %s" % e.message
                 messages.add_message(request, messages.ERROR, msg)
 
             request.session['plan'] = None
+
+        if is_card_added and not is_subscribed:
+            messages.info(request, "Your card is succesfully updated.")
+
+        if is_subscribed:
+            msg = "You successfully subscribed to %s plan" % plan_obj.name
 
         return redirect(self.get_post_success_url())
 
