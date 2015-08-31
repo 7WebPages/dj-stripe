@@ -411,7 +411,7 @@ class ChangePlanView(LoginRequiredMixin,
 
     def get_form_valid_message(self):
         plan_name = self.request.user.customer.current_subscription.plan_display()
-        return "You successfully subscribed to {0}!".format(plan_name)
+        return "You successfully subscribed to {0} plan!".format(plan_name)
 
     @property
     def success_url(self):
