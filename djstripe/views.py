@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import logging
 from __future__ import unicode_literals
 import decimal
 import json
+import logging
 
 from django.contrib import messages
 from django.core.urlresolvers import reverse_lazy, reverse
