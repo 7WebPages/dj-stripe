@@ -217,21 +217,24 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
     def form_valid(self, form):
         customer, created = Customer.get_or_create(self.request.user)
-        current_subscription = customer.cancel_subscription(at_period_end=CANCELLATION_AT_PERIOD_END)
+        current_subscription = customer.cancel_subscription(at_period_end=False)
+        plan = Plan.objects.get(stripe_id=current_subscription.plan)
+
+        msg = "Your subscription %s is cancelled. " % plan.name
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
             # TODO: do refund
-            msg = "Your subscription is cancelled."
-            messages.info(self.request, msg)
+            try:
+                current_subscription.refund()
+                msg += "Money is refunded."
+            except Exception as e:
+                raise e
         else:
             # If pro-rate, they get some time to stay.
-            plan = Plan.objects.get(stripe_id=current_subscription.plan)
-            msg = "Your %s subscription is cancelled. The changes will become effective on %s" % (
-                plan.name,
-                current_subscription.current_period_end.date()
-            )
-            messages.info(self.request, msg)
+            msg += "The changes will become effective on %s." % current_subscription.current_period_end.date()
+
+        messages.info(self.request, msg)
 
         return super(CancelSubscriptionView, self).form_valid(form)
 

@@ -748,6 +748,23 @@ class CurrentSubscription(TimeStampedModel):
     trial_start = models.DateTimeField(null=True, blank=True)
     amount = models.DecimalField(decimal_places=2, max_digits=7)
 
+    def refund(self):
+
+        # TODO: check when it can be multiple
+
+        invoice = self.customer.invoices.filter(
+            period_start=self.current_period_start,
+            period_end=self.cancel_at_period_end
+        ).first()
+        charge = invoice.charges.first()
+
+        duration_days = current_period_end.date().days - current_period_start.date().days
+        spent_days = datetime.date.today().days - current_period_start.date().days
+
+        amount = self.amount * (1 - spent_days / duration_days)
+
+        charge.refund(amount)
+
     def plan_display(self):
         """
         Returns current subscription plan name
