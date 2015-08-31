@@ -754,7 +754,7 @@ class CurrentSubscription(TimeStampedModel):
 
         invoice = self.customer.invoices.filter(
             period_start=self.current_period_start,
-            period_end=self.cancel_at_period_end
+            period_end=self.current_period_end
         ).first()
         charge = invoice.charges.first()
 
