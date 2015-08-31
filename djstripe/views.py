@@ -223,7 +223,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
     def form_valid(self, form):
         customer, created = Customer.get_or_create(self.request.user)
-        current_subscription = customer.cancel_subscription(at_period_end=False)
+        current_subscription = customer.cancel_subscription(at_period_end=True)
         plan = Plan.objects.get(stripe_id=current_subscription.plan)
         free_plan = Plan.objects.filter(amount=0).first()
 
@@ -231,19 +231,6 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
-
-            if plan.amount:
-                try:
-                    current_subscription.refund()
-                except stripe.StripeError as e:
-                    logger.exception(e)
-                    self.error = e.message
-                    msg = "Refund failed. %s" % self.error
-                    messages.add_message(request, messages.ERROR, msg)
-                    return redirect(reverse('djstripe:subscribe'))
-
-                msg += u"Money is refunded."
-            
             customer.subscribe(free_plan.stripe_id)
 
         else:
@@ -450,16 +437,6 @@ class ChangePlanView(LoginRequiredMixin,
             if not customer.get_cards.count and selected_plan.amount:
                 messages.add_message(request, messages.INFO, "Please add card to subscribe")
                 return redirect(reverse('djstripe:change_card'))
-
-            # manually refund when switch to free plan
-            if not selected_plan.amount:
-                try:
-                    customer.current_subscription.refund()
-                except stripe.StripeError as e:
-                    logger.exception(e)
-                    self.error = e.message
-                    msg = "Refund failed. %s" % self.error
-                    messages.add_message(request, messages.ERROR, msg)
 
             try:
                 customer.subscribe(form.data.get("plan"))
