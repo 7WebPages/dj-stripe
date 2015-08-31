@@ -234,7 +234,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
             # If pro-rate, they get some time to stay.
             msg += "The changes will become effective on %s." % current_subscription.current_period_end.date()
 
-        messages.info(self.request, msg)
+        messages.success(self.request, msg)
 
         return super(CancelSubscriptionView, self).form_valid(form)
 
