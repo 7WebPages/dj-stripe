@@ -451,7 +451,8 @@ class ChangePlanView(LoginRequiredMixin,
                 messages.add_message(request, messages.INFO, "Please add card to subscribe")
                 return redirect(reverse('djstripe:change_card'))
 
-            if plan_obj.amount:
+            # manually refund when switch to free plan
+            if not selected_plan.amount:
                 try:
                     customer.current_subscription.refund()
                 except stripe.StripeError as e:
