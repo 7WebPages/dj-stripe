@@ -220,16 +220,16 @@ class CancelSubscriptionView(LoginRequiredMixin,
         current_subscription = customer.cancel_subscription(at_period_end=False)
         plan = Plan.objects.get(stripe_id=current_subscription.plan)
 
-        msg = "Your subscription %s is cancelled. " % plan.name
+        msg = u"Your subscription %s is cancelled. " % plan.name
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
             # TODO: do refund
-            try:
-                current_subscription.refund()
-                msg += "Money is refunded."
-            except Exception as e:
-                raise e
+            #try:
+            current_subscription.refund()
+            msg += u"Money is refunded."
+            #except Exception as e:
+            #    raise e
         else:
             # If pro-rate, they get some time to stay.
             msg += "The changes will become effective on %s." % current_subscription.current_period_end.date()
