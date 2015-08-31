@@ -749,21 +749,31 @@ class CurrentSubscription(TimeStampedModel):
     amount = models.DecimalField(decimal_places=2, max_digits=7)
 
     def refund(self):
+        """
+        Return all money that was not used by customer!
 
+            duration = 10 days
+            spent = 2 days
+            return_used = True (cancel subscription)
+
+            amount = 
+
+        """
         # TODO: check when it can be multiple
-
         # TODO: check when it's not ok to take latest invoice of customer
+
         invoice = self.customer.invoices.filter(paid=True).latest('date')
         charge = invoice.charges.first()
 
         duration_days = self.current_period_end.date() - self.current_period_start.date()
         duration_days = duration_days.days
-        spent_days = datetime.date.today() - self.current_period_start.date()
-        spent_days = spent_days.days
+        remains_days = self.current_period_end.date() - datetime.date.today()
+        remains_days = remains_days.days
 
-        amount = self.amount * (1 - spent_days / duration_days)
+        amount = self.amount * (remains_days / duration_days)
 
-        charge.refund(amount)
+        if amount > 0:
+            charge.refund(amount)
 
     def plan_display(self):
         """
