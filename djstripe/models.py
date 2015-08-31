@@ -752,10 +752,8 @@ class CurrentSubscription(TimeStampedModel):
 
         # TODO: check when it can be multiple
 
-        invoice = self.customer.invoices.filter(
-            period_start=self.current_period_start,
-            period_end=self.current_period_end
-        ).first()
+        # TODO: check when it's not ok to take latest invoice of customer
+        invoice = self.customer.invoices.filter(paid=True).latest('date')
         charge = invoice.charges.first()
 
         duration_days = current_period_end.date().days - current_period_start.date().days
