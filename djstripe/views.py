@@ -433,7 +433,7 @@ class ChangePlanView(LoginRequiredMixin,
                 return redirect(reverse('djstripe:change_card'))
 
             try:
-                current_subscription.refund()
+                customer.current_subscription.refund()
                 customer.subscribe(form.data.get("plan"))
                 request.session['plan'] = None
             except stripe.CardError as e:
