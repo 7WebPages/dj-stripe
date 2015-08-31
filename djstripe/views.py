@@ -229,7 +229,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
             plan = Plan.objects.get(stripe_id=current_subscription.plan)
             msg = "Your %s subscription is cancelled. The changes will become effective on %s" % (
                 plan.name,
-                current_subscription.current_period_end
+                current_subscription.current_period_end.date()
             )
             messages.info(self.request, msg)
 
