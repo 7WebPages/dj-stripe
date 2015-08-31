@@ -449,6 +449,14 @@ class ChangePlanView(LoginRequiredMixin,
                 return redirect(reverse('djstripe:change_card'))
 
             try:
+                customer.current_subscription.refund()
+            except stripe.StripeError as e:
+                logger.exception(e)
+                self.error = e.message
+                msg = "Refund failed. %s" % self.error
+                messages.add_message(request, messages.ERROR, msg)
+
+            try:
                 customer.subscribe(form.data.get("plan"))
                 request.session['plan'] = None
             except stripe.CardError as e:
@@ -465,14 +473,6 @@ class ChangePlanView(LoginRequiredMixin,
             except Exception as e:
                 logger.exception(e)
                 raise e
-
-            try:
-                customer.current_subscription.refund()
-            except stripe.StripeError as e:
-                logger.exception(e)
-                self.error = e.message
-                msg = "Refund failed. %s" % self.error
-                messages.add_message(request, messages.ERROR, msg)
 
             return self.form_valid(form)
         else:
