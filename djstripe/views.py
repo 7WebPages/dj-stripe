@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from __future__ import unicode_literals
 import decimal
 import json
@@ -40,6 +41,9 @@ from stripe.error import InvalidRequestError
 import django_tables2 as tables
 from django_tables2 import RequestConfig
 from django_tables2 import BooleanColumn
+
+
+logger = logging.getLogger('dj-stripe')
 
 
 @csrf_exempt
@@ -173,6 +177,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
                 customer.send_invoice()
             customer.retry_unpaid_invoices()
         except stripe.StripeError as e:
+            logger.exception(e)
             return render(
                 request,
                 self.template_name,
@@ -190,6 +195,7 @@ class ChangeCardView(LoginRequiredMixin, PaymentsContextMixin, DetailView):
             except stripe.StripeError as e:
                 msg = "Subscription failed. %s" % e.message
                 messages.add_message(request, messages.ERROR, msg)
+                logger.exception(e)
 
             request.session['plan'] = None
 
@@ -395,6 +401,7 @@ class SubscribeFormView(
                 else:
                     customer.subscribe(form.cleaned_data["plan"])
             except stripe.StripeError as e:
+                logger.exception(e)
                 # add form error here
                 self.error = e.args[0]
                 return self.form_invalid(form)
@@ -437,15 +444,18 @@ class ChangePlanView(LoginRequiredMixin,
                 customer.subscribe(form.data.get("plan"))
                 request.session['plan'] = None
             except stripe.CardError as e:
+                logger.exception(e)
                 self.error = e.message
                 msg = "%s. %s" % (self.error, "Please use another card and then we will try to subscribe you again")
                 messages.add_message(request, messages.ERROR, msg)
                 return redirect(reverse('djstripe:change_card'))
             except stripe.StripeError as e:
+                logger.exception(e)
                 self.error = e.message
                 messages.add_message(request, messages.ERROR, self.error)
                 return redirect(reverse('djstripe:subscribe'))
             except Exception as e:
+                logger.exception(e)
                 raise e
             return self.form_valid(form)
         else:
