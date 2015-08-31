@@ -231,7 +231,16 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
-            current_subscription.refund()
+
+            try:
+                current_subscription.refund()
+            except stripe.StripeError as e:
+                logger.exception(e)
+                self.error = e.message
+                msg = "Refund failed. %s" % self.error
+                messages.add_message(request, messages.ERROR, msg)
+                return redirect(reverse('djstripe:subscribe'))
+
             msg += u"Money is refunded."
             
             customer.subscribe(free_plan.stripe_id)
@@ -457,6 +466,15 @@ class ChangePlanView(LoginRequiredMixin,
             except Exception as e:
                 logger.exception(e)
                 raise e
+
+            try:
+                customer.current_subscription.refund()
+            except stripe.StripeError as e:
+                logger.exception(e)
+                self.error = e.message
+                msg = "Refund failed. %s" % self.error
+                messages.add_message(request, messages.ERROR, msg)
+
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
