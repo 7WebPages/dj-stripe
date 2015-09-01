@@ -261,12 +261,15 @@ class CancelSubscriptionView(LoginRequiredMixin,
             msg += "You've unsubscribed. Your plan will be over on the %s." % current_subscription.current_period_end.date()
 
             subject = "Your subscription %s is cancelled." % plan.name
-            message = "Your subscription %s is cancelled. You've unsubscribed. Your plan will be over on the %s." % (
-                plan.name,
-                current_subscription.current_period_end.date()
-            )
             subject = subject.strip()
-            message = msg
+
+            ctx = {
+                'plan_name': plan.name,
+                'subscription_period_end': current_subscription.current_period_end.date()
+            }
+
+            message = render_to_string("djstripe/email/subscription/cancelled/body.txt", ctx)
+
             EmailMessage(
                 subject,
                 message,

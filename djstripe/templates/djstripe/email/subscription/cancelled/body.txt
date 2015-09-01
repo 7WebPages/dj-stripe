@@ -1,0 +1,7 @@
+Your subscription {{ plan_name }} is cancelled. You've unsubscribed. Your plan will be over on the {{ subscription_period_end }}.
+
+Please contact us with any questions regarding this letter.
+
+---
+Your {{ site.name }} Team
+{{ protocol }}://{{ site.domain }}
