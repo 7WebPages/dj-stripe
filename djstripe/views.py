@@ -14,6 +14,8 @@ from django.views.generic import TemplateView
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
 
 from braces.views import CsrfExemptMixin
 from braces.views import FormValidMessageMixin
@@ -32,6 +34,7 @@ from .models import Charge
 from .models import Invoice
 from .settings import CANCELLATION_AT_PERIOD_END
 from .settings import PRORATION_POLICY_FOR_UPGRADES
+from .settings import INVOICE_FROM_EMAIL, SEND_INVOICE_RECEIPT_EMAILS
 from .settings import PY3
 from .settings import User
 from .settings import STRIPE_PUBLIC_KEY
@@ -237,6 +240,20 @@ class CancelSubscriptionView(LoginRequiredMixin,
         else:
             # If pro-rate, they get some time to stay.
             msg += "You've unsubscribed. Your plan will be over on the %s." % current_subscription.current_period_end.date()
+
+            subject = "Your subscription %s is cancelled." % plan.name
+            message = "Your subscription %s is cancelled. You've unsubscribed. Your plan will be over on the %s." % (
+                plan.name,
+                current_subscription.current_period_end.date()
+            )
+            subject = subject.strip()
+            message = msg
+            EmailMessage(
+                subject,
+                message,
+                to=[customer.user.email],
+                from_email=INVOICE_FROM_EMAIL
+            ).send()
 
         messages.success(self.request, msg)
 
