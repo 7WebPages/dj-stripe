@@ -22,6 +22,5 @@ PAID BY CREDIT CARD: -${{ charge.amount|floatformat:2 }}
 
 Please contact us with any questions regarding this invoice.
 
----
 Your {{ site.name }} Team
 {{ protocol }}://{{ site.domain }}
