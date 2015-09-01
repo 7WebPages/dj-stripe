@@ -990,7 +990,7 @@ class Charge(StripeObject):
 
     customer = models.ForeignKey(Customer, related_name="charges")
     invoice = models.ForeignKey(Invoice, null=True, related_name="charges")
-    card_last_4 = models.CharField(max_length=4, blank=True)
+    card_last_4 = models.CharField(max_length=4, blank=True, verbose_name="last 4 digits")
     card_kind = models.CharField(max_length=50, blank=True)
     amount = models.DecimalField(decimal_places=2, max_digits=7, null=True)
     amount_refunded = models.DecimalField(
