@@ -5,9 +5,11 @@ import json
 import logging
 
 from django.contrib import messages
+from django.conf import settings
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.contrib.sites.models import Site
 from django.views.generic import DetailView
 from django.views.generic import FormView
 from django.views.generic import TemplateView
@@ -262,10 +264,14 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
             subject = "Your subscription %s is cancelled." % plan.name
             subject = subject.strip()
+            site = Site.objects.get_current()
+            protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
 
             ctx = {
                 'plan_name': plan.name,
-                'subscription_period_end': current_subscription.current_period_end.date()
+                'subscription_period_end': current_subscription.current_period_end.date(),
+                "site": site,
+                "protocol": protocol,
             }
 
             message = render_to_string("djstripe/email/subscription/cancelled/body.txt", ctx)
