@@ -252,7 +252,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
         plan = Plan.objects.get(stripe_id=current_subscription.plan)
         free_plan = Plan.objects.filter(amount=0).first()
 
-        msg = u"Your subscription %s is cancelled. " % plan.name
+        msg = u"Your %s subscription has been cancelled. " % plan.name
 
         if current_subscription.status == current_subscription.STATUS_CANCELLED:
             # If no pro-rate, they get kicked right out.
@@ -260,7 +260,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
         else:
             # If pro-rate, they get some time to stay.
-            msg += "You've unsubscribed. Your plan will be over on the %s." % current_subscription.current_period_end.date()
+            msg += "Your plan will end on %s." % current_subscription.current_period_end.date(),
 
             site = Site.objects.get_current()
             protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
