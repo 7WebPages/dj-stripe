@@ -260,7 +260,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
 
         else:
             # If pro-rate, they get some time to stay.
-            msg += "Your plan will end on %s." % current_subscription.current_period_end.date(),
+            msg += "Your plan will end on %s." % current_subscription.current_period_end.date()
 
             site = Site.objects.get_current()
             protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
