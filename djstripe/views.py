@@ -262,8 +262,6 @@ class CancelSubscriptionView(LoginRequiredMixin,
             # If pro-rate, they get some time to stay.
             msg += "You've unsubscribed. Your plan will be over on the %s." % current_subscription.current_period_end.date()
 
-            subject = "Your subscription %s is cancelled." % plan.name
-            subject = subject.strip()
             site = Site.objects.get_current()
             protocol = getattr(settings, "DEFAULT_HTTP_PROTOCOL", "http")
 
@@ -274,6 +272,7 @@ class CancelSubscriptionView(LoginRequiredMixin,
                 "protocol": protocol,
             }
 
+            subject = render_to_string("djstripe/email/subscription/cancelled/subject.txt", ctx)
             message = render_to_string("djstripe/email/subscription/cancelled/body.txt", ctx)
 
             EmailMessage(
