@@ -1109,6 +1109,8 @@ class Plan(StripeObject):
 
     description = models.TextField()
 
+    order_position = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         return self.name
 
@@ -1172,3 +1174,6 @@ class Plan(StripeObject):
     @property
     def get_yearly_amount_pear_month(self):
         return self.amount / 12
+
+    class Meta:
+        order_by = ['-order_position']
