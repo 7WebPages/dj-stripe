@@ -1176,4 +1176,4 @@ class Plan(StripeObject):
         return self.amount / 12
 
     class Meta:
-        order_by = ['-order_position']
+        ordering = ['-order_position']
